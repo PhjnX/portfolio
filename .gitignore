@@ -8,3 +8,5 @@ out
 
 # Reference material, not part of the site
 public/images/*.mp4
+
+.vercel

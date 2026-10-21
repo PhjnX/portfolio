@@ -26,7 +26,7 @@ export const profile = {
   location: { en: "Binh Tan, Ho Chi Minh City", vi: "Bình Tân, TP. Hồ Chí Minh" } as Localized,
   timeZone: "Asia/Ho_Chi_Minh",
   openToWork: true,
-  siteUrl: "https://phjnx.vercel.app",
+  siteUrl: "https://portfolio-three-teal-31.vercel.app",
 };
 
 /** The one-page sections, in scroll order. `id` doubles as the URL hash. */
