@@ -8,9 +8,9 @@ export type Project = {
   kind: "personal" | "client";
   period: string;
   /** Which illustration ProjectVisual draws on the case study page. */
-  visual: "vietqr" | "ems" | "woo";
+  visual: "vietqr" | "ems" | "woo" | "coffee";
   /** What the 3D scene shows while this project is selected. */
-  screen: "dashboard" | "phone" | "shop" | "checkout";
+  screen: "dashboard" | "phone" | "shop" | "checkout" | "coffee";
   /** Accent colour used by the case study page and the 3D lights. */
   accent: string;
   summary: Localized;
@@ -139,6 +139,48 @@ export const projects: Project[] = [
     learned: {
       en: "On a live shop the safest change is the smallest one that can be rolled back, so I read the existing code before adding mine.",
       vi: "Với shop đang bán, thay đổi an toàn nhất là thay đổi nhỏ nhất và rollback được, nên tôi luôn đọc kỹ code cũ trước khi thêm code của mình.",
+    },
+  },
+  {
+    slug: "phjn-coffee",
+    title: "Phjn Coffee",
+    kind: "personal",
+    period: "10/2026",
+    visual: "coffee",
+    screen: "coffee",
+    accent: "#d9a066",
+    summary: {
+      en: "Ordering site for a fictional Saigon café: guests scan the QR code on their table to order, and the counter runs orders, menu and tables from an admin dashboard.",
+      vi: "Website gọi món cho một quán cà phê (giả lập) ở Sài Gòn: khách quét mã QR trên bàn để gọi món, quầy quản lý đơn, thực đơn và bàn qua trang admin.",
+    },
+    role: { en: "Side project: design and full-stack build", vi: "Dự án cá nhân: thiết kế và làm full-stack" },
+    stack: ["Next.js", "TypeScript", "Tailwind CSS", "Supabase", "Zustand", "Vitest"],
+    links: [{ label: { en: "Live site", vi: "Xem trang thật" }, href: "https://phjn-coffee.vercel.app" }],
+    problem: {
+      en: "A café menu where every category needs different choices: coffee has milk and extra shots, milk tea has toppings, juice has sweetness, pastries can be warmed. Orders have to reach the counter fast, and the price must be impossible to change from the browser.",
+      vi: "Thực đơn quán cà phê mà mỗi loại món cần lựa chọn khác nhau: cà phê có loại sữa và thêm shot, trà sữa có topping, nước ép chọn độ ngọt, bánh có thể hâm nóng. Đơn phải đến quầy nhanh, và giá không thể bị sửa từ trình duyệt.",
+    },
+    built: [
+      {
+        en: "One option system for every kind of item: groups like Size, Sugar or Topping are data (single or multi choice, required or not, with a limit), so a new drink is a data change, not new code.",
+        vi: "Một hệ thống tuỳ chọn cho mọi loại món: các nhóm như Size, Mức đường, Topping là dữ liệu (chọn một hoặc nhiều, bắt buộc hay không, có giới hạn), nên thêm món mới chỉ là thêm dữ liệu, không phải viết code.",
+      },
+      {
+        en: "Ordering by table QR code: each code opens the menu for that table; the public site is browse-only. Checkout re-prices every line on the server with the same pricing function, covered by Vitest tests.",
+        vi: "Gọi món bằng QR tại bàn: mỗi mã mở thực đơn của đúng bàn đó, còn website công khai chỉ để xem. Lúc thanh toán, server tính lại giá từng món bằng cùng hàm tính giá, có test bằng Vitest.",
+      },
+      {
+        en: "Admin dashboard: today's revenue and best sellers, an order board that shows new orders within 5 seconds, a per-table view to settle bills, a menu editor with photo upload, and printable table QR cards.",
+        vi: "Trang admin: doanh thu và món bán chạy trong ngày, bảng đơn hiện đơn mới trong vòng 5 giây, xem theo bàn để tính tiền, sửa thực đơn kèm upload ảnh, và in thẻ QR cho từng bàn.",
+      },
+      {
+        en: "Supabase (Postgres and Storage) in production with a JSON-file fallback for local work, behind one store interface; rate limits, security headers and SEO basics built in.",
+        vi: "Supabase (Postgres và Storage) khi chạy thật, file JSON khi chạy trên máy, cùng một lớp lưu trữ chung; có giới hạn request, security header và SEO cơ bản.",
+      },
+    ],
+    learned: {
+      en: "Treating product options as data instead of per-category forms kept the UI, the cart and the server price check in agreement, and made the menu easy to grow.",
+      vi: "Coi tuỳ chọn món là dữ liệu thay vì làm form riêng cho từng loại giúp giao diện, giỏ hàng và phần kiểm tra giá ở server luôn khớp nhau, và thực đơn dễ mở rộng.",
     },
   },
   {

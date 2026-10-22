@@ -311,3 +311,57 @@ export function shadowTexture() {
     ctx.fillRect(0, 0, w, h);
   });
 }
+
+/* ---------- Phjn Coffee menu ---------- */
+
+export function coffeeTexture() {
+  return make(1024, 640, (ctx, w, h) => {
+    box(ctx, 0, 0, w, h, 0, "#f5ede3");
+    box(ctx, 0, 0, w, 44, 0, "#e6d9c8");
+    ["#ff5f57", "#febc2e", "#28c840"].forEach((c, i) => box(ctx, 20 + i * 24, 15, 14, 14, 7, c));
+    text(ctx, "phjn-coffee.vercel.app/menu?ban=5", 110, 29, 17, "#8a7562", 500, MONO);
+
+    text(ctx, "Phjn Coffee", 40, 100, 30, "#3b2416", 800);
+    box(ctx, 236, 74, 96, 34, 17, "#3b2416");
+    text(ctx, "Bàn 05", 254, 97, 17, "#f5ede3", 700);
+    box(ctx, 846, 70, 138, 42, 21, "#c8823f");
+    text(ctx, "Giỏ · 3", 878, 98, 18, "#ffffff", 800);
+
+    ["Cà phê", "Trà sữa", "Trà trái cây", "Nước ép", "Bánh"].forEach((s, i) => {
+      const x = 40 + i * 150;
+      if (i === 0) box(ctx, x - 12, 132, 128, 38, 19, "#3b2416");
+      text(ctx, s, x, 158, 17, i === 0 ? "#f5ede3" : "#8a7562", 700);
+    });
+
+    const items = [
+      ["Cà phê sữa đá", "29.000đ", "#6b4428", "#e9d3b6"],
+      ["Bạc xỉu", "32.000đ", "#a8774d", "#f1e2cc"],
+      ["Cà phê muối", "35.000đ", "#5a3a22", "#efe5d6"],
+      ["Cold brew cam sả", "45.000đ", "#3f2516", "#f3b35b"],
+    ];
+    items.forEach(([name, price, drink, top], i) => {
+      const x = 40 + i * 240;
+      box(ctx, x, 196, 220, 400, 18, "#fffaf4");
+      // Arched photo frame with a glass of the drink inside.
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x + 16, 212, 188, 220, [94, 94, 14, 14]);
+      ctx.fillStyle = "#ead9c4";
+      ctx.fill();
+      ctx.clip();
+      box(ctx, x + 70, 260, 80, 150, 14, "rgba(255,255,255,0.55)");
+      box(ctx, x + 76, 300, 68, 104, 10, drink);
+      box(ctx, x + 76, 290, 68, 22, 10, top);
+      box(ctx, x + 104, 236, 8, 70, 4, "#c8823f");
+      ctx.restore();
+      text(ctx, name, x + 16, 466, 19, "#3b2416", 800);
+      text(ctx, price, x + 16, 498, 19, "#c8823f", 800);
+      ["M", "L"].forEach((s, k) => {
+        box(ctx, x + 16 + k * 46, 516, 38, 28, 14, k === 0 ? "#3b2416" : "#efe3d4");
+        text(ctx, s, x + 29 + k * 46, 536, 15, k === 0 ? "#fffaf4" : "#8a7562", 800);
+      });
+      box(ctx, x + 150, 512, 54, 36, 18, "#c8823f");
+      text(ctx, "+", x + 170, 538, 24, "#ffffff", 800);
+    });
+  });
+}

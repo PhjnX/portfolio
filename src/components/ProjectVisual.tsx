@@ -9,6 +9,8 @@ export function ProjectVisual({ project }: { project: Project }) {
       return <EmsVisual accent={project.accent} />;
     case "woo":
       return <WooVisual accent={project.accent} />;
+    case "coffee":
+      return <CoffeeVisual accent={project.accent} />;
   }
 }
 
@@ -199,3 +201,81 @@ function WooVisual({ accent }: { accent: string }) {
   );
 }
 
+
+/* ---------- Phjn Coffee ---------- */
+
+/** A table card with its QR code, the phone menu it opens, and an order landing on the admin board. */
+function CoffeeVisual({ accent }: { accent: string }) {
+  const drinks = [
+    { name: "Cà phê sữa đá", price: "29.000đ", fill: "#6b4428" },
+    { name: "Bạc xỉu", price: "32.000đ", fill: "#a8774d" },
+    { name: "Trà đào cam sả", price: "39.000đ", fill: "#e8a25a" },
+  ];
+  return (
+    <div className="relative flex h-full items-center justify-center gap-[5%] px-6">
+      {/* Table card */}
+      <div className="hidden w-[20%] max-w-[150px] -rotate-6 rounded-2xl bg-[#f5ede3] p-3 text-center text-[#3b2416] shadow-2xl shadow-black/40 transition-transform duration-700 group-hover:rotate-0 sm:block">
+        <div className="text-[9px] font-bold tracking-widest uppercase opacity-60">Phjn Coffee</div>
+        <div className="mt-1 text-xl font-extrabold">Bàn 05</div>
+        <div className="mx-auto mt-2 grid aspect-square w-4/5 grid-cols-5 gap-0.5 rounded-md bg-white p-1.5">
+          {Array.from({ length: 25 }, (_, i) => (
+            <span key={i} className={`rounded-[1px] ${[0, 1, 4, 5, 7, 9, 12, 13, 15, 19, 20, 21, 23, 24].includes(i) ? "bg-[#3b2416]" : ""}`} />
+          ))}
+        </div>
+        <div className="mt-2 text-[9px] font-semibold opacity-60">Quét để gọi món</div>
+      </div>
+
+      {/* Phone menu */}
+      <div className="w-[30%] max-w-[190px] min-w-[150px] rounded-[26px] border border-white/10 bg-[#111] p-1.5 shadow-2xl shadow-black/50">
+        <div className="space-y-2 rounded-[20px] bg-[#f5ede3] p-3 text-[#3b2416]">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold">Phjn Coffee</span>
+            <span className="rounded-full bg-[#3b2416] px-1.5 py-0.5 text-[8px] font-bold text-[#f5ede3]">Bàn 05</span>
+          </div>
+          {drinks.map((d, i) => (
+            <div
+              key={d.name}
+              className="flex items-center gap-2 rounded-xl bg-white/80 p-1.5 transition-transform duration-500 group-hover:-translate-y-0.5"
+              style={{ transitionDelay: `${i * 60}ms` }}
+            >
+              <span className="grid h-9 w-8 place-items-end rounded-t-full rounded-b-md bg-[#ead9c4] p-1">
+                <span className="h-5 w-full rounded-sm" style={{ background: d.fill }} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[9px] font-bold">{d.name}</span>
+                <span className="block text-[9px] font-bold" style={{ color: accent }}>
+                  {d.price}
+                </span>
+              </span>
+              <span className="grid size-5 place-items-center rounded-full text-[11px] font-bold text-white" style={{ background: accent }}>
+                +
+              </span>
+            </div>
+          ))}
+          <div className="rounded-full bg-[#3b2416] py-1.5 text-center text-[9px] font-bold text-[#f5ede3]">Đặt món · 3</div>
+        </div>
+      </div>
+
+      {/* Admin order board */}
+      <div className="hidden w-[28%] max-w-[200px] rounded-xl border border-white/10 bg-[#16120f] p-3 shadow-2xl shadow-black/40 md:block">
+        <div className="mb-2 text-[9px] font-bold tracking-widest text-white/50 uppercase">Đơn hàng</div>
+        {[
+          ["Mới", "Bàn 05", true],
+          ["Đang pha", "Bàn 02", false],
+          ["Sẵn sàng", "Bàn 11", false],
+        ].map(([status, table, fresh]) => (
+          <div
+            key={String(table)}
+            className={`mb-1.5 flex items-center justify-between rounded-lg px-2 py-1.5 text-[9px] font-semibold ${
+              fresh ? "text-[#1b120b]" : "bg-white/5 text-white/70"
+            }`}
+            style={fresh ? { background: accent } : undefined}
+          >
+            <span>{table}</span>
+            <span>{status}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

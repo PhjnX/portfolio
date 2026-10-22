@@ -12,6 +12,7 @@ import { Character, type CharacterMotion } from "./Character";
 import {
   checkoutTexture,
   codeTexture,
+  coffeeTexture,
   dashboardTexture,
   logoTexture,
   phoneTexture,
@@ -332,7 +333,13 @@ function World({ section, screen }: { section: SectionId; screen: Screen }) {
   }, [key]);
 
   const screens = useMemo(
-    () => ({ code: codeTexture(), dashboard: dashboardTexture(), shop: shopTexture(), checkout: checkoutTexture() }),
+    () => ({
+      code: codeTexture(),
+      dashboard: dashboardTexture(),
+      shop: shopTexture(),
+      checkout: checkoutTexture(),
+      coffee: coffeeTexture(),
+    }),
     [],
   );
   useEffect(() => () => Object.values(screens).forEach((t) => t.dispose()), [screens]);
