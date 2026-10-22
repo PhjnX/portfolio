@@ -114,7 +114,7 @@ export function Intro({ go }: SectionProps) {
           <h1 className="mt-2 text-[clamp(3rem,5.6vw,5.25rem)] leading-[0.98] font-extrabold tracking-[-0.04em]">
             Phjn
             <br />
-            <span className="text-accent">Hoàng</span>
+            <span className="text-accent">Hoang</span>
           </h1>
         </Item>
         <Item>

@@ -13,7 +13,7 @@ const body = Plus_Jakarta_Sans({
 });
 
 const description =
-  "Phjn Hoàng (Bùi Hoàng Phi), front-end developer in Ho Chi Minh City. React, React Native, TypeScript, Next.js, WordPress and WooCommerce.";
+  "Phjn Hoang (Bùi Hoàng Phi), front-end developer in Ho Chi Minh City. React, React Native, TypeScript, Next.js, WordPress and WooCommerce.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(profile.siteUrl),

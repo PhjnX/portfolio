@@ -10,7 +10,7 @@ export const profile = {
   /** Legal name: used where a real name matters (About, CV, metadata description). */
   name: "Bùi Hoàng Phi",
   /** What the site calls me everywhere else. */
-  nickname: "Phjn Hoàng",
+  nickname: "Phjn Hoang",
   brand: "Phjn",
   shortName: "Phjn",
   initials: "BHP",
