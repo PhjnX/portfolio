@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { profile, sections } from "@/content/site";
 import { Download } from "./icons";
 import { ThemeIcon } from "./ThemeIcon";
+import { Scramble } from "./Scramble";
 import { useSite, useT } from "./Providers";
 
 type Props = {
@@ -51,7 +52,7 @@ export function Nav({ active, onGo }: Props) {
                     isActive ? "text-fg" : "text-muted hover:text-fg"
                   }`}
                 >
-                  {t(s.label)}
+                  <Scramble text={t(s.label)} />
                   {isActive && (
                     <motion.span
                       layoutId="nav-underline"

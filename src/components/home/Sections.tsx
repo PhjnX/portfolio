@@ -19,6 +19,7 @@ import { ArrowDown, ArrowUpRight, Check, Copy, Download, GitHub, LinkedIn, MapPi
 import { LocalTime } from "../LocalTime";
 import { useT } from "../Providers";
 import { TechBadge } from "../TechBadge";
+import { Scramble } from "../Scramble";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -47,12 +48,12 @@ function Heading({ kicker, title, lead }: { kicker: string; title: string; lead?
       <Item>
         <p className="flex items-center gap-2.5 text-xs font-bold tracking-[0.18em] text-accent uppercase">
           <span aria-hidden className="h-px w-6 bg-accent" />
-          {kicker}
+          <Scramble text={kicker} />
         </p>
       </Item>
       <Item>
         <h2 className="mt-4 text-[clamp(2rem,3.1vw,2.85rem)] leading-[1.1] font-extrabold tracking-[-0.025em] text-balance">
-          {title}
+          <Scramble text={title} />
         </h2>
       </Item>
       {lead && (
@@ -108,7 +109,7 @@ export function Intro({ go }: SectionProps) {
     <div className="grid w-full items-center gap-10 lg:grid-cols-[1fr_26vw_1fr]">
       <div>
         <Item>
-          <p className="text-base font-semibold text-muted md:text-lg">{t(ui.intro.hello)}</p>
+          <p className="text-base font-semibold text-muted md:text-lg"><Scramble text={t(ui.intro.hello)} /></p>
         </Item>
         <Item>
           <h1 className="mt-2 text-[clamp(3rem,5.6vw,5.25rem)] leading-[0.98] font-extrabold tracking-[-0.04em]">
@@ -147,7 +148,7 @@ export function Intro({ go }: SectionProps) {
 
       <div className="lg:justify-self-end">
         <Item>
-          <p className="text-base font-semibold text-muted md:text-lg">{t(ui.intro.lead)}</p>
+          <p className="text-base font-semibold text-muted md:text-lg"><Scramble text={t(ui.intro.lead)} /></p>
         </Item>
         <Item>
           <p className="mt-2 text-[clamp(2.4rem,4.2vw,4rem)] leading-[0.98] font-extrabold tracking-[-0.04em]">
