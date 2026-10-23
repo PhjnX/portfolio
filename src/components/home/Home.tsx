@@ -9,6 +9,7 @@ import { Nav } from "../Nav";
 import { useSite, useT } from "../Providers";
 import { GitHub, LinkedIn, Mail, Phone } from "../icons";
 import { Loader } from "./Loader";
+import { SceneGuard } from "../scene/SceneGuard";
 import { About, Contact, Experience, Intro, Skills, WhatIDo, Work, type SectionProps } from "./Sections";
 
 // three.js only runs in the browser.
@@ -100,6 +101,7 @@ export function Home() {
   }, []);
   const loaderTarget = sceneReady ? 100 : Math.min(95, 30 + sceneProgress * 0.65);
   const finishLoading = useCallback(() => setLoading(false), []);
+  const markSceneReady = useCallback(() => setSceneReady(true), []);
 
   // Open the section named in the URL, e.g. /#work from a case study's back link.
   useEffect(() => {
@@ -208,13 +210,15 @@ export function Home() {
   return (
     <>
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
-        <Scene section={id} screen={projects[project].screen} theme={theme}
+        <SceneGuard onUnavailable={markSceneReady}>
+          <Scene section={id} screen={projects[project].screen} theme={theme}
           themeOrigin={themeOrigin}
           lang={lang}
           revealed={!loading}
           onProgress={setSceneProgress}
-          onReady={() => setSceneReady(true)}
-        />
+          onReady={markSceneReady}
+          />
+        </SceneGuard>
       </div>
       {/* Keeps text readable where the scene sits behind it on narrow screens. */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-bg/70 lg:hidden" />

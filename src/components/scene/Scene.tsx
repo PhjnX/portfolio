@@ -722,7 +722,7 @@ export default function Scene({ onProgress, onReady, ...world }: SceneProps) {
       eventSource={document.body}
       eventPrefix="client"
       camera={{ position: [0, 0, 11.5], fov: 35 }}
-      dpr={lowPower ? 1 : [1, 1.75]}
+      dpr={lowPower ? 1 : [1, 1.5]}
       gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
     >
       <color attach="background" args={[bg]} />
@@ -738,7 +738,7 @@ export default function Scene({ onProgress, onReady, ...world }: SceneProps) {
       <PerformanceMonitor onDecline={() => setLowPower(true)} />
       {!lowPower && (
       <EffectComposer multisampling={4}>
-        <N8AO aoRadius={0.6} intensity={2.2} distanceFalloff={0.6} halfRes />
+        <N8AO aoRadius={0.6} intensity={2.2} distanceFalloff={0.6} halfRes quality="performance" />
         <Bloom intensity={0.35} luminanceThreshold={1} mipmapBlur />
       </EffectComposer>
       )}
