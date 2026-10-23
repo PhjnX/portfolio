@@ -30,8 +30,8 @@ function waveAmount(t: number, start: number) {
   return up * down;
 }
 
-const SKIN = "#f0b18c";
-const SKIN_SHADE = "#d98f6a";
+const SKIN = "#f4c9a8";
+const SKIN_SHADE = "#e0a585";
 const HAIR = "#191310";
 const HOODIE = "#1e1d26";
 const HOODIE_TRIM = "#2c2a36";
@@ -47,16 +47,16 @@ function useMaterials() {
         color: SKIN,
         roughness: 0.48,
         sheen: 0.6,
-        sheenColor: new THREE.Color("#ffd8c4"),
+        sheenColor: new THREE.Color("#ffe4d2"),
         sheenRoughness: 0.5,
         clearcoat: 0.08,
       }),
       skinShade: new THREE.MeshPhysicalMaterial({ color: SKIN_SHADE, roughness: 0.55, sheen: 0.4 }),
       hair: new THREE.MeshPhysicalMaterial({
         color: HAIR,
-        roughness: 0.55,
-        sheen: 0.8,
-        sheenColor: new THREE.Color("#5a4a6e"),
+        roughness: 0.78,
+        sheen: 0.45,
+        sheenColor: new THREE.Color("#4a4058"),
         sheenRoughness: 0.4,
       }),
       hoodie: new THREE.MeshPhysicalMaterial({
@@ -73,7 +73,8 @@ function useMaterials() {
       frame: new THREE.MeshPhysicalMaterial({ color: "#0c0c10", roughness: 0.25, clearcoat: 1 }),
       lens: new THREE.MeshPhysicalMaterial({ color: "#dfe6ff", transparent: true, opacity: 0.1, roughness: 0, clearcoat: 1 }),
       white: new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.2, clearcoat: 0.6 }),
-      iris: new THREE.MeshPhysicalMaterial({ color: "#3a2417", roughness: 0.2, clearcoat: 1 }),
+      iris: new THREE.MeshPhysicalMaterial({ color: "#24160e", roughness: 0.2, clearcoat: 1 }),
+      silver: new THREE.MeshPhysicalMaterial({ color: "#c9ccd4", metalness: 1, roughness: 0.28 }),
       pupil: new THREE.MeshBasicMaterial({ color: "#0a0706" }),
       mouth: new THREE.MeshStandardMaterial({ color: "#5c1f24", roughness: 0.6 }),
       tongue: new THREE.MeshStandardMaterial({ color: "#d4626a", roughness: 0.6 }),
@@ -86,27 +87,30 @@ function useMaterials() {
 
 type Mats = ReturnType<typeof useMaterials>;
 
-/* ---------- Hair: one lumpy shell plus a few loose curls ---------- */
+/* ---------- Hair: a full, messy crop with a fringe over the forehead ---------- */
 
 const HEAD_R = 0.5;
 
-/** Cheap 3D "noise" from layered sines; enough to make the hair surface look curly. */
-function curl(x: number, y: number, z: number) {
+/** Low-frequency "noise" from layered sines: big, uneven locks rather than tight curls. */
+function tuft(x: number, y: number, z: number) {
   return (
-    Math.sin(x * 11 + y * 3) * Math.sin(y * 12 - z * 2) * Math.sin(z * 10 + x * 4) * 0.55 +
-    Math.sin(x * 23 + z * 7) * Math.sin(y * 21) * 0.25 +
-    Math.sin((x + y + z) * 17) * 0.2
+    Math.sin(x * 6 + y * 2) * Math.sin(y * 7 - z * 3) * 0.6 +
+    Math.sin(z * 5 + x * 3) * Math.sin(y * 4 + x) * 0.3 +
+    Math.sin((x - z) * 9) * 0.1
   );
 }
 
 /** How much hair a direction on the head gets: none on the face, full on top and at the back. */
 function hairMask(d: THREE.Vector3) {
   const front = THREE.MathUtils.smoothstep(d.z, 0.05, 0.6);
-  // The hairline sits higher at the front than at the sides and the back.
-  const line = THREE.MathUtils.lerp(-0.25, 0.56, front);
+  // The hairline sits higher at the front (the fringe covers the forehead) than at the sides and back.
+  const line = THREE.MathUtils.lerp(-0.28, 0.5, front);
   const sideburn = Math.abs(d.x) > 0.75 && d.z > -0.1 ? 0.25 : 0;
   return THREE.MathUtils.smoothstep(d.y, line - 0.08 - sideburn, line + 0.1);
 }
+
+/** Thickness of the hair shell; fuller on top, like the photo. */
+const volumeAt = (d: THREE.Vector3) => 0.06 + Math.max(0, d.y) * 0.12;
 
 function useHairGeometry() {
   return useMemo(() => {
@@ -120,9 +124,7 @@ function useHairGeometry() {
     for (let i = 0; i < pos.count; i++) {
       d.fromBufferAttribute(pos, i).normalize();
       const m = hairMask(d);
-      // Fuller on top, like a curly crop; tucked inside the head where there is no hair.
-      const volume = 0.06 + Math.max(0, d.y) * 0.1;
-      const r = HEAD_R - 0.03 + m * (volume + 0.05 + curl(d.x, d.y, d.z) * 0.045);
+      const r = HEAD_R - 0.03 + m * (volumeAt(d) + 0.03 + tuft(d.x, d.y, d.z) * 0.035);
       pos.setXYZ(i, d.x * r, d.y * r, d.z * r);
     }
     geo.computeVertexNormals();
@@ -130,26 +132,54 @@ function useHairGeometry() {
   }, []);
 }
 
-/** Small curls along the hairline and on top so the silhouette is not too smooth. */
-function useCurlPositions() {
+type Lock = { p: THREE.Vector3; q: THREE.Quaternion; s: THREE.Vector3 };
+
+const UP = new THREE.Vector3(0, 1, 0);
+
+/** A lock lying on the head: an elongated blob whose long axis follows `dir` along the surface. */
+function lockAt(p: THREE.Vector3, dir: THREE.Vector3, size: [number, number, number]): Lock {
+  const n = p.clone().normalize();
+  const t = dir.clone().sub(n.clone().multiplyScalar(dir.dot(n))).normalize();
+  return {
+    p: p.clone().add(t.clone().multiplyScalar(size[1] * 0.35)),
+    q: new THREE.Quaternion().setFromUnitVectors(UP, t),
+    s: new THREE.Vector3(...size),
+  };
+}
+
+/**
+ * Locks that flow from the crown outwards and down, plus a fringe that hangs over
+ * the forehead and sweeps slightly to the side, so the silhouette reads as messy hair.
+ */
+function useLocks() {
   return useMemo(() => {
-    const out: { p: THREE.Vector3; s: number }[] = [];
-    const n = 260;
+    const out: Lock[] = [];
+    const n = 240;
     const d = new THREE.Vector3();
+    const down = new THREE.Vector3(0, -1, 0);
     for (let i = 0; i < n; i++) {
       const y = 1 - (i / (n - 1)) * 2;
       const r = Math.sqrt(1 - y * y);
       const a = i * 2.399963;
       d.set(Math.cos(a) * r, y, Math.sin(a) * r);
-      const m = hairMask(d);
-      if (m < 0.6) continue;
+      if (hairMask(d) < 0.7) continue;
       const j = Math.sin(i * 12.9898) * 0.5 + 0.5;
-      // Keep only some, so the curls read as clumps rather than a pattern.
-      if (j < 0.62) continue;
-      const volume = 0.06 + Math.max(0, d.y) * 0.1;
-      // Sunk halfway into the shell so they read as bumps of the same mass.
-      const radius = HEAD_R - 0.03 + volume + 0.03 + curl(d.x, d.y, d.z) * 0.045;
-      out.push({ p: d.clone().multiplyScalar(radius), s: 0.045 + j * 0.03 });
+      if (j < 0.3) continue;
+      const radius = HEAD_R - 0.03 + volumeAt(d) + 0.0;
+      // Near the crown "down" is undefined, so flow towards the front there.
+      const dir = d.y > 0.92 ? new THREE.Vector3(0.3, 0, 1) : down;
+      const k = 0.8 + j * 0.45;
+      out.push(lockAt(d.clone().multiplyScalar(radius), dir, [0.05 * k, 0.12 * k, 0.038 * k]));
+    }
+    // Fringe across the forehead.
+    const fringe = 9;
+    for (let i = 0; i < fringe; i++) {
+      const x = -0.36 + (0.72 * i) / (fringe - 1);
+      const y0 = 0.4 - Math.abs(x) * 0.18;
+      const z = Math.sqrt(Math.max(0, 0.56 ** 2 - x * x - y0 * y0));
+      const sweep = new THREE.Vector3(0.35 + x * 0.4, -1, 0.15);
+      const k = 1 - Math.abs(x) * 0.6 + (i % 2) * 0.12;
+      out.push(lockAt(new THREE.Vector3(x, y0, z), sweep, [0.068, 0.18 * k, 0.045]));
     }
     return out;
   }, []);
@@ -157,18 +187,18 @@ function useCurlPositions() {
 
 function Hair({ mats }: { mats: Mats }) {
   const geo = useHairGeometry();
-  const curls = useCurlPositions();
+  const locks = useLocks();
   const inst = useMemo(() => {
-    const mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 10), mats.hair, curls.length);
+    const mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 12), mats.hair, locks.length);
     const m = new THREE.Matrix4();
-    curls.forEach((c, i) => {
-      m.compose(c.p, new THREE.Quaternion(), new THREE.Vector3(c.s, c.s, c.s));
+    locks.forEach((l, i) => {
+      m.compose(l.p, l.q, l.s);
       mesh.setMatrixAt(i, m);
     });
     return mesh;
-  }, [curls, mats.hair]);
+  }, [locks, mats.hair]);
   return (
-    <group position={[0, 0.03, -0.01]} scale={[1.02, 1, 1]}>
+    <group position={[0, 0.03, -0.01]} scale={[1.03, 1, 1]}>
       <mesh geometry={geo} material={mats.hair} />
       <primitive object={inst} />
     </group>
@@ -190,6 +220,9 @@ function Brow({ side, mats }: { side: 1 | -1; mats: Mats }) {
   return <mesh geometry={geo} material={mats.hair} position={[side * 0.17, 0.235, 0.455]} rotation={[0, side * 0.25, side * -0.08]} />;
 }
 
+/** Eyelid angle at rest: the eyes stay a little closed, like smiling eyes. */
+const LID_REST = -0.2;
+
 function Eye({ side, mats, pupil, lid }: {
   side: 1 | -1;
   mats: Mats;
@@ -199,7 +232,7 @@ function Eye({ side, mats, pupil, lid }: {
   // Upper half of a sphere, slightly bigger than the eye, that rotates down to blink.
   const lidGeo = useMemo(() => new THREE.SphereGeometry(0.098, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), []);
   return (
-    <group position={[side * 0.17, 0.07, 0.4]} rotation={[0, side * 0.22, 0]}>
+    <group position={[side * 0.17, 0.07, 0.4]} rotation={[0, side * 0.22, 0]} scale={0.88}>
       <mesh material={mats.white} scale={[1, 1.08, 0.7]}>
         <sphereGeometry args={[0.092, 24, 18]} />
       </mesh>
@@ -214,32 +247,61 @@ function Eye({ side, mats, pupil, lid }: {
           <sphereGeometry args={[0.011, 8, 6]} />
         </mesh>
       </group>
-      {/* Pivot at the eye centre: -0.9 rad tucks it up and back (open), 1.45 covers the eye (closed). */}
-      <mesh ref={lid} geometry={lidGeo} material={mats.skin} rotation={[-0.9, 0, 0]} scale={[1.04, 1.12, 0.78]} />
+      {/* Pivot at the eye centre: LID_REST leaves the eye half-closed in a smile, 1.45 closes it. */}
+      <mesh ref={lid} geometry={lidGeo} material={mats.skin} rotation={[LID_REST, 0, 0]} scale={[1.05, 1.12, 1.08]} />
     </group>
   );
 }
 
+/** Rounded rectangle path centred on the origin. */
+function roundedRect(path: THREE.Path, w: number, h: number, r: number) {
+  const x = -w / 2;
+  const y = -h / 2;
+  path.moveTo(x + r, y);
+  path.lineTo(x + w - r, y);
+  path.quadraticCurveTo(x + w, y, x + w, y + r);
+  path.lineTo(x + w, y + h - r);
+  path.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  path.lineTo(x + r, y + h);
+  path.quadraticCurveTo(x, y + h, x, y + h - r);
+  path.lineTo(x, y + r);
+  path.quadraticCurveTo(x, y, x + r, y);
+  return path;
+}
+
+/** Thick black frames with soft rectangular rims, like the ones in the photo. */
 function Glasses({ mats }: { mats: Mats }) {
+  const { rim, lens } = useMemo(() => {
+    const outer = roundedRect(new THREE.Shape(), 0.3, 0.22, 0.06) as THREE.Shape;
+    const inner = roundedRect(new THREE.Path(), 0.23, 0.16, 0.04);
+    outer.holes.push(inner);
+    const rimGeo = new THREE.ExtrudeGeometry(outer, {
+      depth: 0.025,
+      bevelEnabled: true,
+      bevelSize: 0.006,
+      bevelThickness: 0.006,
+      bevelSegments: 3,
+      curveSegments: 10,
+    });
+    rimGeo.translate(0, 0, -0.0125);
+    const lensGeo = new THREE.ShapeGeometry(roundedRect(new THREE.Shape(), 0.23, 0.16, 0.04) as THREE.Shape, 10);
+    return { rim: rimGeo, lens: lensGeo };
+  }, []);
   return (
     <group position={[0, 0.07, 0.5]}>
       {[-1, 1].map((s) => (
-        <group key={s} position={[s * 0.17, 0, 0]} rotation={[0, s * 0.2, 0]}>
-          <mesh material={mats.frame} scale={[1, 0.92, 1]}>
-            <torusGeometry args={[0.125, 0.018, 12, 48]} />
-          </mesh>
-          <mesh material={mats.lens} position={[0, 0, -0.004]} scale={[1, 0.92, 1]}>
-            <circleGeometry args={[0.12, 32]} />
-          </mesh>
+        <group key={s} position={[s * 0.168, 0, 0]} rotation={[0, s * 0.2, 0]}>
+          <mesh geometry={rim} material={mats.frame} />
+          <mesh geometry={lens} material={mats.lens} position={[0, 0, -0.006]} />
         </group>
       ))}
-      <mesh material={mats.frame} position={[0, 0.02, -0.01]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.013, 0.013, 0.1, 8]} />
+      <mesh material={mats.frame} position={[0, 0.035, -0.012]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.016, 0.016, 0.07, 10]} />
       </mesh>
       {[-1, 1].map((s) => (
         // Arms run from the outer edge of each rim back to the ear, along the side of the head.
-        <mesh key={`t${s}`} material={mats.frame} position={[s * 0.38, 0.02, -0.285]} rotation={[0, -s * 0.33, 0]}>
-          <boxGeometry args={[0.018, 0.022, 0.56]} />
+        <mesh key={`t${s}`} material={mats.frame} position={[s * 0.395, 0.05, -0.27]} rotation={[0, -s * 0.33, 0]}>
+          <boxGeometry args={[0.022, 0.03, 0.54]} />
         </mesh>
       ))}
     </group>
@@ -347,14 +409,47 @@ function useTorsoGeometry() {
   }, []);
 }
 
+/** White lettering printed on the chest, like the hoodie in the photo. */
+function usePrintTexture() {
+  return useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 160;
+    const ctx = canvas.getContext("2d")!;
+    ctx.font = "900 112px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = "#1e1d26";
+    ctx.fillStyle = "#f1f1f4";
+    ctx.strokeText("phjn", 256, 76);
+    ctx.fillText("phjn", 256, 76);
+    // A small red mark under the lettering.
+    ctx.fillStyle = "#e0393e";
+    ctx.beginPath();
+    ctx.ellipse(300, 132, 18, 7, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    return tex;
+  }, []);
+}
+
 function Torso({ mats }: { mats: Mats }) {
   const geo = useTorsoGeometry();
+  const print = usePrintTexture();
   return (
     <group>
       <mesh geometry={geo} material={mats.hoodie} scale={[1.28, 1, 0.82]} />
       {/* Waistband */}
       <mesh material={mats.trim} position={[0, -0.02, 0]} scale={[1.28, 1, 0.82]}>
         <cylinderGeometry args={[0.415, 0.41, 0.1, 48]} />
+      </mesh>
+      {/* Chest print, curved to follow the front of the hoodie */}
+      <mesh position={[0, 0.47, 0]} scale={[1.28, 1, 0.82]}>
+        <cylinderGeometry args={[0.462, 0.462, 0.13, 48, 1, true, -0.42, 0.84]} />
+        <meshStandardMaterial map={print} transparent roughness={0.8} polygonOffset polygonOffsetFactor={-2} />
       </mesh>
       {/* Kangaroo pocket */}
       <RoundedBox args={[0.5, 0.2, 0.06]} radius={0.03} position={[0, 0.2, 0.355]} rotation={[-0.08, 0, 0]} material={mats.trim} />
@@ -403,6 +498,12 @@ function Arm({ side, shoulder, elbow, mats }: { side: 1 | -1; shoulder: Limb; el
         <mesh material={mats.trim} position={[0, -0.39, 0]}>
           <cylinderGeometry args={[0.112, 0.112, 0.07, 20]} />
         </mesh>
+        {/* Silver bracelet on the left wrist */}
+        {side === -1 && (
+          <mesh material={mats.silver} position={[0, -0.445, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.095, 0.012, 10, 32]} />
+          </mesh>
+        )}
         {/* Mitten hand with a thumb */}
         <group position={[0, -0.5, 0.01]}>
           <mesh material={mats.skin} scale={[0.95, 1.15, 0.75]}>
@@ -485,7 +586,7 @@ export function Character({ motion }: { motion: React.RefObject<CharacterMotion>
     const b = t - blinkAt.current;
     const closed = b > 0 && b < 0.16 ? Math.sin((b / 0.16) * Math.PI) : 0;
     for (const lid of [lidL, lidR]) {
-      if (lid.current) lid.current.rotation.x = lerp(-0.9, 1.45, closed);
+      if (lid.current) lid.current.rotation.x = lerp(LID_REST, 1.45, closed);
     }
 
     if (torso.current) {
