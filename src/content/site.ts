@@ -100,6 +100,10 @@ export const ui = {
       en: "Hover a project to see it on the monitor.",
       vi: "Rê chuột vào từng dự án để xem trên màn hình.",
     },
+    leadTouch: {
+      en: "Tap a project to see its details.",
+      vi: "Chạm vào từng dự án để xem chi tiết.",
+    },
     personal: { en: "Personal", vi: "Cá nhân" },
     client: { en: "At Webie", vi: "Tại Webie" },
     caseStudy: { en: "Case study", vi: "Xem chi tiết" },

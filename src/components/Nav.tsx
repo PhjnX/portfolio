@@ -20,7 +20,8 @@ export function Nav({ active, onGo }: Props) {
   const { lang, setLang, theme, toggleTheme } = useSite();
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40">
+    <header className="fixed inset-x-0 top-0 z-40 border-b border-line bg-bg/80 backdrop-blur-md lg:border-transparent lg:bg-transparent lg:backdrop-blur-none">
+      {/* Solid on phones so scrolled text never runs under the logo; the desktop pager needs no background. */}
       <nav className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5 md:px-10">
         <Link
           href="/"

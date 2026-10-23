@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Environment, Lightformer, PerformanceMonitor, RoundedBox, useProgress, useTexture } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
@@ -68,7 +68,7 @@ function fit(l: Layout, wide: boolean): Layout {
   const bust = l.mode === "bust";
   return {
     ...l,
-    pos: [0, bust ? -4.2 : 0.4, -3],
+    pos: [0, bust ? -5.8 : 0.4, -3],
     turn: bust ? 0 : 1.0,
     scale: l.scale * 0.7,
   };
@@ -423,7 +423,7 @@ type Bubble = { id: number; text: string } | null;
 
 /**
  * What the character says and when it waves: a hello when the loading screen opens,
- * "Xin chào!" / "Hello!" when the language changes, and a random line when clicked.
+ * "Xin chÃ o!" / "Hello!" when the language changes, and a random line when clicked.
  */
 function useGreetings(
   motion: React.RefObject<CharacterMotion>,
@@ -550,6 +550,8 @@ type BubbleProps = {
 type SceneProps = WorldProps & {
   onProgress: (pct: number) => void;
   onReady: () => void;
+  /** Stop rendering while the scene is covered (phones, past the intro) to save battery. */
+  paused?: boolean;
 };
 
 function World({ section, screen, theme, themeOrigin, lang, revealed, setBubble, bubbleAnchor }: WorldProps & BubbleProps) {
@@ -709,11 +711,14 @@ function useThemeBackground() {
   return bg;
 }
 
-export default function Scene({ onProgress, onReady, ...world }: SceneProps) {
+export default function Scene({ onProgress, onReady, paused = false, ...world }: SceneProps) {
   const [bubble, setBubble] = useState<Bubble>(null);
   const bubbleAnchor = useRef<HTMLDivElement>(null);
   // Drops to a lighter render (no retina resolution, no soft shadows or bloom) if the frame rate stays low.
-  const [lowPower, setLowPower] = useState(false);
+  // Phones and tablets start in the light mode: no retina resolution, no soft shadows or bloom.
+  const [lowPower, setLowPower] = useState(
+    () => window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 1024,
+  );
   // An opaque background keeps the post-processing clean (it mishandles a transparent canvas).
   const bg = useThemeBackground();
   return (
@@ -722,7 +727,8 @@ export default function Scene({ onProgress, onReady, ...world }: SceneProps) {
       eventSource={document.body}
       eventPrefix="client"
       camera={{ position: [0, 0, 11.5], fov: 35 }}
-      dpr={lowPower ? 1 : [1, 1.5]}
+      dpr={lowPower ? [1, 1.25] : [1, 1.5]}
+      frameloop={paused ? "never" : "always"}
       gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
     >
       <color attach="background" args={[bg]} />

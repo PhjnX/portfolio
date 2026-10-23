@@ -42,7 +42,7 @@ function Item({ children, className }: { children: React.ReactNode; className?: 
  * The one heading pattern every section uses: a small label, the title, and a short
  * subtitle. Keeping sizes and gaps identical everywhere is what makes the pages read as a set.
  */
-function Heading({ kicker, title, lead }: { kicker: string; title: string; lead?: string }) {
+function Heading({ kicker, title, lead }: { kicker: string; title: string; lead?: React.ReactNode }) {
   return (
     <>
       <Item>
@@ -156,7 +156,7 @@ export function Intro({ go }: SectionProps) {
           </p>
         </Item>
         <Item>
-          <p className="mt-5 max-w-[19rem] text-sm leading-relaxed text-muted">{t(ui.intro.tagline)}</p>
+          <p className="mt-5 max-w-[19rem] text-sm leading-relaxed text-muted max-sm:hidden">{t(ui.intro.tagline)}</p>
         </Item>
       </div>
     </div>
@@ -304,7 +304,13 @@ export function Work({ project, setProject }: SectionProps) {
 
   return (
     <div className="max-w-xl">
-      <Heading kicker={t(ui.work.kicker)} title={t(ui.work.title)} lead={t(ui.work.lead)} />
+      <Heading kicker={t(ui.work.kicker)} title={t(ui.work.title)} lead={
+          <>
+            <span className="lg:hidden">{t(ui.work.leadTouch)}</span>
+            <span className="hidden lg:inline">{t(ui.work.lead)}</span>
+          </>
+        }
+      />
       <Item>
         <ul className="mt-8 border-t border-line">
           {projects.map((p, i) => {

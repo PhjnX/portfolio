@@ -215,13 +215,17 @@ export function Home() {
           themeOrigin={themeOrigin}
           lang={lang}
           revealed={!loading}
+          paused={!pager && index > 0}
           onProgress={setSceneProgress}
           onReady={markSceneReady}
           />
         </SceneGuard>
       </div>
-      {/* Keeps text readable where the scene sits behind it on narrow screens. */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-bg/70 lg:hidden" />
+      {/* Phones: the character is shown on the intro only; past it the scene pauses and is covered so text stays readable. */}
+      <div
+        aria-hidden
+        className={`pointer-events-none fixed inset-0 z-0 bg-bg transition-opacity duration-700 lg:hidden ${index === 0 ? "opacity-0" : "opacity-95"}`}
+      />
 
       <Nav active={index} onGo={go} />
 
