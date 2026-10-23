@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Environment, Lightformer, PerformanceMonitor, RoundedBox, useProgress, useTexture } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";

@@ -76,8 +76,7 @@ function useMaterials() {
       iris: new THREE.MeshPhysicalMaterial({ color: "#24160e", roughness: 0.2, clearcoat: 1 }),
       silver: new THREE.MeshPhysicalMaterial({ color: "#c9ccd4", metalness: 1, roughness: 0.28 }),
       pupil: new THREE.MeshBasicMaterial({ color: "#0a0706" }),
-      mouth: new THREE.MeshStandardMaterial({ color: "#5c1f24", roughness: 0.6 }),
-      tongue: new THREE.MeshStandardMaterial({ color: "#d4626a", roughness: 0.6 }),
+      mouth: new THREE.MeshStandardMaterial({ color: "#7a3a35", roughness: 0.6 }),
       blush: new THREE.MeshBasicMaterial({ color: "#ff7b7b", transparent: true, opacity: 0.18, depthWrite: false }),
       string: new THREE.MeshStandardMaterial({ color: "#ececf2", roughness: 0.5 }),
     }),
@@ -221,7 +220,7 @@ function Brow({ side, mats }: { side: 1 | -1; mats: Mats }) {
 }
 
 /** Eyelid angle at rest: the eyes stay a little closed, like smiling eyes. */
-const LID_REST = -0.2;
+const LID_REST = -0.7;
 
 function Eye({ side, mats, pupil, lid }: {
   side: 1 | -1;
@@ -243,8 +242,12 @@ function Eye({ side, mats, pupil, lid }: {
         <mesh material={mats.pupil} position={[0, 0, 0.078]} scale={[1, 1, 0.3]}>
           <sphereGeometry args={[0.027, 14, 10]} />
         </mesh>
-        <mesh material={mats.white} position={[0.016, 0.02, 0.085]}>
-          <sphereGeometry args={[0.011, 8, 6]} />
+        {/* Two catchlights make the eyes look alive. */}
+        <mesh material={mats.white} position={[0.017, 0.021, 0.086]}>
+          <sphereGeometry args={[0.014, 10, 8]} />
+        </mesh>
+        <mesh material={mats.white} position={[-0.014, -0.016, 0.084]}>
+          <sphereGeometry args={[0.007, 8, 6]} />
         </mesh>
       </group>
       {/* Pivot at the eye centre: LID_REST leaves the eye half-closed in a smile, 1.45 closes it. */}
@@ -309,31 +312,25 @@ function Glasses({ mats }: { mats: Mats }) {
 }
 
 function Mouth({ mats }: { mats: Mats }) {
-  // An open, friendly grin: dark half-disc with a row of teeth and a hint of tongue.
-  const shape = useMemo(() => {
-    const s = new THREE.Shape();
-    s.moveTo(-0.12, 0);
-    s.quadraticCurveTo(0, 0.025, 0.12, 0);
-    s.quadraticCurveTo(0.1, -0.12, 0, -0.125);
-    s.quadraticCurveTo(-0.1, -0.12, -0.12, 0);
-    return new THREE.ExtrudeGeometry(s, { depth: 0.02, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.01, bevelSegments: 4 });
-  }, []);
-  const teeth = useMemo(() => {
-    const s = new THREE.Shape();
-    s.moveTo(-0.1, -0.004);
-    s.quadraticCurveTo(0, 0.02, 0.1, -0.004);
-    s.lineTo(0.085, -0.04);
-    s.quadraticCurveTo(0, -0.03, -0.085, -0.04);
-    s.lineTo(-0.1, -0.004);
-    return new THREE.ShapeGeometry(s);
+  // A soft, closed-mouth smile: one curved stroke with small rounded corners.
+  const geo = useMemo(() => {
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.11, 0.025, -0.02),
+      new THREE.Vector3(-0.055, -0.012, 0.005),
+      new THREE.Vector3(0, -0.022, 0.012),
+      new THREE.Vector3(0.055, -0.012, 0.005),
+      new THREE.Vector3(0.11, 0.025, -0.02),
+    ]);
+    return new THREE.TubeGeometry(curve, 32, 0.014, 10, false);
   }, []);
   return (
-    <group position={[0, -0.13, 0.455]} rotation={[-0.18, 0, 0]}>
-      <mesh geometry={shape} material={mats.mouth} />
-      <mesh geometry={teeth} material={mats.white} position={[0, 0, 0.034]} />
-      <mesh material={mats.tongue} position={[0, -0.085, 0.022]} scale={[1, 0.45, 0.4]}>
-        <sphereGeometry args={[0.06, 16, 10]} />
-      </mesh>
+    <group position={[0, -0.15, 0.455]} rotation={[-0.15, 0, 0]}>
+      <mesh geometry={geo} material={mats.mouth} />
+      {[-1, 1].map((s) => (
+        <mesh key={s} material={mats.mouth} position={[s * 0.11, 0.025, -0.02]}>
+          <sphereGeometry args={[0.016, 10, 8]} />
+        </mesh>
+      ))}
     </group>
   );
 }
