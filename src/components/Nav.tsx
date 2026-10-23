@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { profile, sections } from "@/content/site";
-import { Download, Moon, Sun } from "./icons";
+import { Download } from "./icons";
+import { ThemeIcon } from "./ThemeIcon";
 import { useSite, useT } from "./Providers";
 
 type Props = {
@@ -82,11 +83,18 @@ export function Nav({ active, onGo }: Props) {
           </div>
           <button
             type="button"
-            onClick={toggleTheme}
+            onClick={(e) => {
+              // The new theme spreads out from the centre of this button.
+              const r = e.currentTarget.getBoundingClientRect();
+              toggleTheme({
+                x: (r.left + r.width / 2) / window.innerWidth,
+                y: 1 - (r.top + r.height / 2) / window.innerHeight,
+              });
+            }}
             aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
             className="grid size-8 place-items-center rounded-full border border-line text-muted transition-colors hover:text-fg"
           >
-            {theme === "dark" ? <Sun width={15} height={15} /> : <Moon width={15} height={15} />}
+            <ThemeIcon dark={theme === "dark"} />
           </button>
           <a
             href={t(profile.cv)}

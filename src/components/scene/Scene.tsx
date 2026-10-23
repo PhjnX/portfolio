@@ -8,7 +8,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Project } from "@/content/projects";
 import type { SectionId } from "@/content/site";
+import type { Point } from "../Providers";
 import { Character, type CharacterMotion } from "./Character";
+import { Sky, type SkyState } from "./Sky";
 import {
   checkoutTexture,
   codeTexture,
@@ -21,6 +23,7 @@ import {
 } from "./textures";
 
 type Screen = Project["screen"];
+type Theme = "light" | "dark";
 type Mode = "bust" | "desk";
 type Vec = [number, number, number];
 
@@ -202,7 +205,9 @@ function Workspace({
 }
 
 /** Purple light behind the bust, as on the reference site. */
-function Glow({ motion }: { motion: React.RefObject<CharacterMotion> }) {
+function Glow({ motion, daylight }: { motion: React.RefObject<CharacterMotion>; daylight: React.RefObject<number> }) {
+  const night = useMemo(() => new THREE.Color("#7b5cff"), []);
+  const day = useMemo(() => new THREE.Color("#ffb07a"), []);
   // Radial falloff computed in the shader, so the edge is always soft.
   const mat = useMemo(
     () =>
@@ -221,7 +226,10 @@ function Glow({ motion }: { motion: React.RefObject<CharacterMotion> }) {
   useFrame(() => {
     const k = motion.current?.desk ?? 0;
     // Full behind the bust, a faint wash behind the desk.
-    mat.uniforms.uOpacity.value = THREE.MathUtils.lerp(0.75, 0.25, THREE.MathUtils.smoothstep(k, 0.05, 0.6));
+    const d = daylight.current ?? 0;
+    mat.uniforms.uOpacity.value =
+      THREE.MathUtils.lerp(0.75, 0.25, THREE.MathUtils.smoothstep(k, 0.05, 0.6)) * THREE.MathUtils.lerp(1, 0.55, d);
+    (mat.uniforms.uColor.value as THREE.Color).lerpColors(night, day, d);
   });
   return (
     <mesh position={[0, 1.35, -1.2]} material={mat}>
@@ -304,8 +312,111 @@ function poseOf(l: Layout): Pose {
   return { pos: new THREE.Vector3(...l.pos), scale: l.scale, turn: l.turn, desk: l.mode === "desk" ? 1 : 0 };
 }
 
-function World({ section, screen }: { section: SectionId; screen: Screen }) {
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+
+/**
+ * Day/night timeline. A theme change grows the new sky as a circle from the toggle
+ * (about 1.1 s), then the sun or moon rises in it; lights follow the same clock.
+ */
+function useDaylight(theme: Theme, origin: Point) {
+  const initial = theme === "light" ? 1 : 0;
+  const sky = useRef<SkyState>({
+    from: initial,
+    to: initial,
+    reveal: 3,
+    sun: initial,
+    moon: 1 - initial,
+    origin: new THREE.Vector2(origin.x, origin.y),
+    x: 0.8,
+  });
+  const daylight = useRef(initial);
+  const startedAt = useRef<number | null>(null);
+  const changing = useRef(false);
+
+  useEffect(() => {
+    const s = sky.current;
+    const next = theme === "light" ? 1 : 0;
+    if (next === s.to) return;
+    s.from = s.to;
+    s.to = next;
+    s.origin.set(origin.x, origin.y);
+    s.reveal = 0;
+    startedAt.current = null;
+    changing.current = true;
+    // origin is read once per change; it updates together with theme.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme]);
+
+  useFrame(({ clock }) => {
+    if (!changing.current) return;
+    const t = clock.elapsedTime;
+    if (startedAt.current === null) startedAt.current = t;
+    const k = t - startedAt.current;
+    const s = sky.current;
+    const rising = easeInOutCubic(clamp01((k - 0.25) / 1.5));
+    const setting = 1 - easeInOutCubic(clamp01(k / 0.8));
+    s.reveal = easeInOutCubic(clamp01(k / 1.1)) * 2.8;
+    if (s.to === 1) {
+      s.sun = rising;
+      s.moon = setting;
+    } else {
+      s.sun = setting;
+      s.moon = rising;
+    }
+    daylight.current = THREE.MathUtils.lerp(s.from, s.to, easeInOutCubic(clamp01(k / 1.2)));
+    if (k > 1.8) {
+      s.from = s.to;
+      changing.current = false;
+    }
+  });
+
+  return { sky, daylight };
+}
+
+/** Lights that move from a violet night set-up to a warm, brighter day. */
+function Lights({ daylight }: { daylight: React.RefObject<number> }) {
+  const ambient = useRef<THREE.AmbientLight>(null);
+  const key = useRef<THREE.DirectionalLight>(null);
+  const back = useRef<THREE.DirectionalLight>(null);
+  const colors = useMemo(
+    () => ({
+      keyNight: new THREE.Color("#fff4ea"),
+      keyDay: new THREE.Color("#ffe2bf"),
+      backNight: new THREE.Color("#a58cff"),
+      backDay: new THREE.Color("#ffd2a6"),
+    }),
+    [],
+  );
+  useFrame(() => {
+    const d = daylight.current ?? 0;
+    if (ambient.current) ambient.current.intensity = THREE.MathUtils.lerp(0.45, 0.95, d);
+    if (key.current) {
+      key.current.intensity = THREE.MathUtils.lerp(1.7, 2.1, d);
+      key.current.color.lerpColors(colors.keyNight, colors.keyDay, d);
+    }
+    if (back.current) {
+      back.current.intensity = THREE.MathUtils.lerp(1.6, 0.9, d);
+      back.current.color.lerpColors(colors.backNight, colors.backDay, d);
+    }
+  });
+  return (
+    <>
+      <ambientLight ref={ambient} intensity={0.45} />
+      {/* Key light from the front-right, a cool fill from the left, a rim from behind. */}
+      <directionalLight ref={key} position={[3, 5, 7]} intensity={1.7} color="#fff4ea" />
+      <directionalLight position={[-6, 1, 4]} intensity={0.45} color="#b8c8ff" />
+      <directionalLight ref={back} position={[-3, 3, -6]} intensity={1.6} color="#a58cff" />
+    </>
+  );
+}
+
+type WorldProps = { section: SectionId; screen: Screen; theme: Theme; themeOrigin: Point };
+
+function World({ section, screen, theme, themeOrigin }: WorldProps) {
   const { size, camera } = useThree();
+  const { sky, daylight } = useDaylight(theme, themeOrigin);
+  // Sun and moon sit on the side of the screen that has no text in this section.
+  const skyX = section === "about" || section === "whatido" ? 0.2 : 0.8;
   const wide = size.width >= 1024;
   const layout = fit(layoutFor(section, screen), wide);
 
@@ -346,6 +457,7 @@ function World({ section, screen }: { section: SectionId; screen: Screen }) {
   const monitor = layout.monitor === "phone" ? screens.dashboard : screens[layout.monitor];
 
   useFrame((state, dt) => {
+    sky.current.x = THREE.MathUtils.damp(sky.current.x, skyX, 1.6, dt);
     const t = state.clock.elapsedTime;
     if (startedAt.current === null) startedAt.current = t;
     const p = Math.min(1, (t - startedAt.current) / DURATION);
@@ -378,16 +490,21 @@ function World({ section, screen }: { section: SectionId; screen: Screen }) {
     camera.position.y = THREE.MathUtils.damp(camera.position.y, state.pointer.y * 0.15, 2, dt);
     camera.lookAt(0, 0, 0);
 
-    if (rim.current) easing.damp3(rim.current.position, [c.pos.x + state.pointer.x * 2, 2 + state.pointer.y, -3], 0.4, dt);
+    if (rim.current) {
+      easing.damp3(rim.current.position, [c.pos.x + state.pointer.x * 2, 2 + state.pointer.y, -3], 0.4, dt);
+      rim.current.intensity = THREE.MathUtils.lerp(60, 18, daylight.current);
+    }
     head.set(c.pos.x, c.pos.y + 1.55 * c.scale, c.pos.z);
   });
 
   return (
     <>
+      <Sky state={sky} />
+      <Lights daylight={daylight} />
       <pointLight ref={rim} color="#8c6bff" intensity={60} distance={14} />
       <group ref={rig}>
         <group ref={body}>
-          <Glow motion={motion} />
+          <Glow motion={motion} daylight={daylight} />
           <Character motion={motion} />
           <Workspace motion={motion} monitor={monitor} phoneFocus={section === "work" && screen === "phone"} />
         </group>
@@ -409,7 +526,7 @@ function useThemeBackground() {
   return bg;
 }
 
-export default function Scene({ section, screen }: { section: SectionId; screen: Screen }) {
+export default function Scene({ section, screen, theme, themeOrigin }: WorldProps) {
   // An opaque background keeps the post-processing clean (it mishandles a transparent canvas).
   const bg = useThemeBackground();
   return (
@@ -421,20 +538,15 @@ export default function Scene({ section, screen }: { section: SectionId; screen:
       gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
     >
       <color attach="background" args={[bg]} />
-      <ambientLight intensity={0.45} />
-      {/* Key light from the front-right, a cool fill from the left, violet rim from behind. */}
-      <directionalLight position={[3, 5, 7]} intensity={1.7} color="#fff4ea" />
-      <directionalLight position={[-6, 1, 4]} intensity={0.45} color="#b8c8ff" />
-      <directionalLight position={[-3, 3, -6]} intensity={1.6} color="#a58cff" />
       <Environment resolution={128}>
         <Lightformer form="rect" intensity={2.2} color="#ffffff" position={[0, 4, 6]} scale={[8, 3, 1]} />
         <Lightformer form="rect" intensity={2} color="#8c7bff" position={[-6, 1, -2]} rotation-y={Math.PI / 2} scale={[8, 4, 1]} />
         <Lightformer form="rect" intensity={1.2} color="#4fd1e8" position={[6, -1, 2]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} />
       </Environment>
-      <World section={section} screen={screen} />
+      <World section={section} screen={screen} theme={theme} themeOrigin={themeOrigin} />
       <EffectComposer multisampling={4}>
         <N8AO aoRadius={0.6} intensity={2.2} distanceFalloff={0.6} halfRes />
-        <Bloom intensity={0.35} luminanceThreshold={0.85} mipmapBlur />
+        <Bloom intensity={0.35} luminanceThreshold={1} mipmapBlur />
       </EffectComposer>
     </Canvas>
   );

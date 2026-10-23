@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { projects } from "@/content/projects";
 import { profile, sections, ui } from "@/content/site";
 import { Nav } from "../Nav";
-import { useT } from "../Providers";
+import { useSite, useT } from "../Providers";
 import { GitHub, LinkedIn, Mail, Phone } from "../icons";
 import { About, Contact, Experience, Intro, Skills, WhatIDo, Work, type SectionProps } from "./Sections";
 
@@ -58,6 +58,7 @@ function usePagerMode() {
 
 export function Home() {
   const t = useT();
+  const { theme, themeOrigin } = useSite();
   const pager = usePagerMode();
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState(1);
@@ -201,7 +202,7 @@ export function Home() {
   return (
     <>
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
-        <Scene section={id} screen={projects[project].screen} />
+        <Scene section={id} screen={projects[project].screen} theme={theme} themeOrigin={themeOrigin} />
       </div>
       {/* Keeps text readable where the scene sits behind it on narrow screens. */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-bg/70 lg:hidden" />

@@ -83,3 +83,39 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
 }
+
+/* Theme switch: colours ease over while the new sky spreads out from the toggle. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition:
+    color 0.7s ease 0.15s,
+    background-color 0.7s ease 0.15s,
+    border-color 0.7s ease 0.15s,
+    fill 0.7s ease 0.15s,
+    stroke 0.7s ease 0.15s !important;
+}
+
+/* Language switch: body text fades in from a soft blur; headings use the scramble effect. */
+@keyframes lang-in {
+  from {
+    opacity: 0.15;
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+.lang-switching main :is(p, li, dd, h3, a, button):not([data-scramble], [data-scramble] *) {
+  animation: lang-in 0.55s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-switching *,
+  .lang-switching main * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
