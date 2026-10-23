@@ -1,12 +1,12 @@
 "use client";
 
-import { Environment, Lightformer, RoundedBox, useProgress } from "@react-three/drei";
+import { Environment, Lightformer, PerformanceMonitor, RoundedBox, useProgress, useTexture } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { AnimatePresence, motion as m } from "motion/react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer, N8AO } from "@react-three/postprocessing";
 import { easing } from "maath";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Project } from "@/content/projects";
 import { ui, type Lang, type SectionId } from "@/content/site";
@@ -73,6 +73,13 @@ function fit(l: Layout, wide: boolean): Layout {
     scale: l.scale * 0.7,
   };
 }
+
+/** Screenshots of the live sites per monitor screen (public/projects). */
+const SHOTS = {
+  dashboard: ["/projects/ems-1.jpg", "/projects/ems-2.jpg", "/projects/ems-3.jpg"],
+  coffee: ["/projects/coffee-1.jpg", "/projects/coffee-2.jpg", "/projects/coffee-3.jpg"],
+};
+const SHOT_FILES = Object.values(SHOTS).flat();
 
 const MONITOR_PINK = "#d58fc4";
 const FURNITURE = "#ececf1";
@@ -549,7 +556,7 @@ function World({ section, screen, theme, themeOrigin, lang, revealed, setBubble,
   const { size, camera } = useThree();
   const { sky, daylight } = useDaylight(theme, themeOrigin);
   // Sun and moon sit on the side of the screen that has no text in this section.
-  const skyX = section === "about" || section === "whatido" ? 0.2 : 0.8;
+  const skyX = section === "about" || section === "whatido" ? 0.2 : section === "experience" || section === "work" ? 0.58 : 0.8;
   const wide = size.width >= 1024;
   const layout = fit(layoutFor(section, screen), wide);
 
@@ -592,7 +599,27 @@ function World({ section, screen, theme, themeOrigin, lang, revealed, setBubble,
     [],
   );
   useEffect(() => () => Object.values(screens).forEach((t) => t.dispose()), [screens]);
-  const monitor = layout.monitor === "phone" ? screens.dashboard : screens[layout.monitor];
+
+  // Real screenshots of the live sites, shown as a slideshow on the monitor; the other
+  // projects keep their drawn screens.
+  const shots = useTexture(SHOT_FILES, (loaded) => {
+    for (const tex of Array.isArray(loaded) ? loaded : [loaded]) {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+    }
+  });
+  const monitorKey = layout.monitor === "phone" ? "dashboard" : layout.monitor;
+  const slides = SHOTS[monitorKey as keyof typeof SHOTS]?.map((file) => shots[SHOT_FILES.indexOf(file)]);
+  const [slide, setSlide] = useState(0);
+  useEffect(() => {
+    setSlide(0);
+    if (!slides || layout.mode !== "desk") return;
+    const id = window.setInterval(() => setSlide((n) => n + 1), 3500);
+    return () => window.clearInterval(id);
+    // slides is derived from monitorKey.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monitorKey, layout.mode]);
+  const monitor = slides ? slides[slide % slides.length] : screens[monitorKey as keyof typeof screens];
 
   useFrame((state, dt) => {
     sky.current.x = THREE.MathUtils.damp(sky.current.x, skyX, 1.6, dt);
@@ -685,6 +712,8 @@ function useThemeBackground() {
 export default function Scene({ onProgress, onReady, ...world }: SceneProps) {
   const [bubble, setBubble] = useState<Bubble>(null);
   const bubbleAnchor = useRef<HTMLDivElement>(null);
+  // Drops to a lighter render (no retina resolution, no soft shadows or bloom) if the frame rate stays low.
+  const [lowPower, setLowPower] = useState(false);
   // An opaque background keeps the post-processing clean (it mishandles a transparent canvas).
   const bg = useThemeBackground();
   return (
@@ -693,7 +722,7 @@ export default function Scene({ onProgress, onReady, ...world }: SceneProps) {
       eventSource={document.body}
       eventPrefix="client"
       camera={{ position: [0, 0, 11.5], fov: 35 }}
-      dpr={[1, 1.75]}
+      dpr={lowPower ? 1 : [1, 1.75]}
       gl={{ antialias: false, alpha: false, powerPreference: "high-performance" }}
     >
       <color attach="background" args={[bg]} />
@@ -703,11 +732,16 @@ export default function Scene({ onProgress, onReady, ...world }: SceneProps) {
         <Lightformer form="rect" intensity={1.2} color="#4fd1e8" position={[6, -1, 2]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} />
       </Environment>
       <LoadReporter onProgress={onProgress} onReady={onReady} />
-      <World {...world} setBubble={setBubble} bubbleAnchor={bubbleAnchor} />
+      <Suspense fallback={null}>
+        <World {...world} setBubble={setBubble} bubbleAnchor={bubbleAnchor} />
+      </Suspense>
+      <PerformanceMonitor onDecline={() => setLowPower(true)} />
+      {!lowPower && (
       <EffectComposer multisampling={4}>
         <N8AO aoRadius={0.6} intensity={2.2} distanceFalloff={0.6} halfRes />
         <Bloom intensity={0.35} luminanceThreshold={1} mipmapBlur />
       </EffectComposer>
+      )}
     </Canvas>
     <SpeechBubble bubble={bubble} anchor={bubbleAnchor} />
     </>
