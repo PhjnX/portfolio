@@ -1,13 +1,15 @@
 "use client";
 
-import { Environment, Lightformer, RoundedBox } from "@react-three/drei";
+import { Environment, Lightformer, RoundedBox, useProgress } from "@react-three/drei";
+import type { ThreeEvent } from "@react-three/fiber";
+import { AnimatePresence, motion as m } from "motion/react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer, N8AO } from "@react-three/postprocessing";
 import { easing } from "maath";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Project } from "@/content/projects";
-import type { SectionId } from "@/content/site";
+import { ui, type Lang, type SectionId } from "@/content/site";
 import type { Point } from "../Providers";
 import { Character, type CharacterMotion } from "./Character";
 import { Sky, type SkyState } from "./Sky";
@@ -410,9 +412,140 @@ function Lights({ daylight }: { daylight: React.RefObject<number> }) {
   );
 }
 
-type WorldProps = { section: SectionId; screen: Screen; theme: Theme; themeOrigin: Point };
+type Bubble = { id: number; text: string } | null;
 
-function World({ section, screen, theme, themeOrigin }: WorldProps) {
+/**
+ * What the character says and when it waves: a hello when the loading screen opens,
+ * "Xin chào!" / "Hello!" when the language changes, and a random line when clicked.
+ */
+function useGreetings(
+  motion: React.RefObject<CharacterMotion>,
+  lang: Lang,
+  revealed: boolean,
+  setBubble: (b: Bubble) => void,
+) {
+  const clock = useThree((s) => s.clock);
+  const lastLine = useRef(-1);
+  const hideTimer = useRef(0);
+
+  const say = useCallback(
+    (text: string, ms = 2800) => {
+      motion.current.waveAt = clock.elapsedTime;
+      setBubble({ id: Date.now(), text });
+      window.clearTimeout(hideTimer.current);
+      hideTimer.current = window.setTimeout(() => setBubble(null), ms);
+    },
+    [clock, motion, setBubble],
+  );
+
+  useEffect(() => () => window.clearTimeout(hideTimer.current), []);
+
+  // Hello once the page opens.
+  useEffect(() => {
+    if (!revealed) return;
+    const id = window.setTimeout(() => say(ui.character.hello[lang], 4200), 900);
+    return () => window.clearTimeout(id);
+    // Only on reveal; a later language change has its own greeting.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealed]);
+
+  // A short hello in the new language.
+  const firstLang = useRef(true);
+  useEffect(() => {
+    if (firstLang.current) {
+      firstLang.current = false;
+      return;
+    }
+    if (revealed) say(ui.character.lang[lang]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
+  const onCharacterClick = useCallback(
+    (e: ThreeEvent<MouseEvent>) => {
+      // Clicks on links and buttons laid over the character are for them, not for it.
+      if ((e.nativeEvent.target as HTMLElement | null)?.closest("a, button, input")) return;
+      e.stopPropagation();
+      const lines = ui.character.lines;
+      let i = Math.floor(Math.random() * lines.length);
+      if (i === lastLine.current) i = (i + 1) % lines.length;
+      lastLine.current = i;
+      say(lines[i][lang]);
+    },
+    [lang, say],
+  );
+
+  return { onCharacterClick };
+}
+
+/** Pointer cursor while hovering the character. */
+const pointer = (over: boolean) => () => {
+  document.body.style.cursor = over ? "pointer" : "";
+};
+
+/** Drawn as normal DOM outside the canvas; the scene moves it to the character's head every frame. */
+function SpeechBubble({ bubble, anchor }: { bubble: Bubble; anchor: React.RefObject<HTMLDivElement | null> }) {
+  return (
+    <div ref={anchor} className="pointer-events-none fixed top-0 left-0 z-20" style={{ transform: "translate(-999px, -999px)" }}>
+      <AnimatePresence>
+        {bubble && (
+          <m.div
+            key={bubble.id}
+            initial={{ opacity: 0, scale: 0.6, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: -6 }}
+            transition={{ type: "spring", stiffness: 420, damping: 26 }}
+            className="relative w-max max-w-[220px] origin-bottom-left rounded-2xl rounded-bl-sm bg-fg px-3.5 py-2 text-sm font-bold text-bg shadow-lg"
+          >
+            {bubble.text}
+          </m.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/** Tells the page how far loading has got (100 when nothing is loading) and when the first frames are drawn. */
+function LoadReporter({ onProgress, onReady }: { onProgress: (pct: number) => void; onReady: () => void }) {
+  const { active, progress } = useProgress();
+  useEffect(() => {
+    onProgress(active ? progress : 100);
+  }, [active, progress, onProgress]);
+
+  const frames = useRef(0);
+  const reported = useRef(false);
+  useFrame(() => {
+    if (reported.current || active) return;
+    frames.current += 1;
+    // A few frames in, shaders are compiled and the scene is really on screen.
+    if (frames.current > 3) {
+      reported.current = true;
+      onReady();
+    }
+  });
+  return null;
+}
+
+type WorldProps = {
+  section: SectionId;
+  screen: Screen;
+  theme: Theme;
+  themeOrigin: Point;
+  lang: Lang;
+  /** False while the loading screen is up; the camera glides in when it turns true. */
+  revealed: boolean;
+};
+
+type BubbleProps = {
+  setBubble: (b: Bubble) => void;
+  bubbleAnchor: React.RefObject<HTMLDivElement | null>;
+};
+
+type SceneProps = WorldProps & {
+  onProgress: (pct: number) => void;
+  onReady: () => void;
+};
+
+function World({ section, screen, theme, themeOrigin, lang, revealed, setBubble, bubbleAnchor }: WorldProps & BubbleProps) {
   const { size, camera } = useThree();
   const { sky, daylight } = useDaylight(theme, themeOrigin);
   // Sun and moon sit on the side of the screen that has no text in this section.
@@ -431,7 +564,12 @@ function World({ section, screen, theme, themeOrigin }: WorldProps) {
   const from = useRef<Pose>(poseOf(layout));
   const target = useRef<Pose>(poseOf(layout));
   const startedAt = useRef<number | null>(null);
-  const motion = useRef<CharacterMotion>({ desk: current.current.desk, turn: current.current.turn });
+  const motion = useRef<CharacterMotion>({ desk: current.current.desk, turn: current.current.turn, waveAt: -1 });
+  const { onCharacterClick } = useGreetings(motion, lang, revealed, setBubble);
+  // Point beside the head that the speech bubble follows.
+  const bubblePoint = useRef<THREE.Group>(null);
+  const projected = useMemo(() => new THREE.Vector3(), []);
+  const revealedAt = useRef<number | null>(null);
 
   const key = `${layout.pos.join()}|${layout.scale}|${layout.turn}|${layout.mode}`;
   useEffect(() => {
@@ -484,8 +622,12 @@ function World({ section, screen, theme, themeOrigin }: WorldProps) {
     sway.current = THREE.MathUtils.damp(sway.current, state.pointer.x * 0.08, 3, dt);
     if (body.current) body.current.rotation.y = c.turn + sway.current;
 
+    // Opening shot: start further back and glide in once the loading screen opens.
+    if (revealed && revealedAt.current === null) revealedAt.current = t;
+    const intro = revealedAt.current === null ? 1 : 1 - easeInOutCubic(clamp01((t - revealedAt.current) / 1.8));
+
     // The camera eases back a little mid-move and settles again.
-    camera.position.z = 11.5 + arc * 0.9;
+    camera.position.z = 11.5 + arc * 0.9 + intro * 6;
     camera.position.x = THREE.MathUtils.damp(camera.position.x, state.pointer.x * 0.25, 2, dt);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, state.pointer.y * 0.15, 2, dt);
     camera.lookAt(0, 0, 0);
@@ -495,6 +637,14 @@ function World({ section, screen, theme, themeOrigin }: WorldProps) {
       rim.current.intensity = THREE.MathUtils.lerp(60, 18, daylight.current);
     }
     head.set(c.pos.x, c.pos.y + 1.55 * c.scale, c.pos.z);
+
+    // Keep the speech bubble next to the head on screen.
+    if (bubblePoint.current && bubbleAnchor.current) {
+      bubblePoint.current.getWorldPosition(projected).project(camera);
+      const x = (projected.x * 0.5 + 0.5) * size.width;
+      const y = (-projected.y * 0.5 + 0.5) * size.height;
+      bubbleAnchor.current.style.transform = `translate(${x}px, ${y}px) translateY(-100%)`;
+    }
   });
 
   return (
@@ -506,6 +656,12 @@ function World({ section, screen, theme, themeOrigin }: WorldProps) {
         <group ref={body}>
           <Glow motion={motion} daylight={daylight} />
           <Character motion={motion} />
+          {/* Invisible hit area: clicking the character makes it wave and say something. */}
+          <mesh position={[0, 0.9, 0]} onClick={onCharacterClick} onPointerOver={pointer(true)} onPointerOut={pointer(false)}>
+            <boxGeometry args={[1.4, 2.8, 1.1]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+          </mesh>
+          <group ref={bubblePoint} position={[0.5, 2.15, 0]} />
           <Workspace motion={motion} monitor={monitor} phoneFocus={section === "work" && screen === "phone"} />
         </group>
       </group>
@@ -526,10 +682,13 @@ function useThemeBackground() {
   return bg;
 }
 
-export default function Scene({ section, screen, theme, themeOrigin }: WorldProps) {
+export default function Scene({ onProgress, onReady, ...world }: SceneProps) {
+  const [bubble, setBubble] = useState<Bubble>(null);
+  const bubbleAnchor = useRef<HTMLDivElement>(null);
   // An opaque background keeps the post-processing clean (it mishandles a transparent canvas).
   const bg = useThemeBackground();
   return (
+    <>
     <Canvas
       eventSource={document.body}
       eventPrefix="client"
@@ -543,11 +702,14 @@ export default function Scene({ section, screen, theme, themeOrigin }: WorldProp
         <Lightformer form="rect" intensity={2} color="#8c7bff" position={[-6, 1, -2]} rotation-y={Math.PI / 2} scale={[8, 4, 1]} />
         <Lightformer form="rect" intensity={1.2} color="#4fd1e8" position={[6, -1, 2]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} />
       </Environment>
-      <World section={section} screen={screen} theme={theme} themeOrigin={themeOrigin} />
+      <LoadReporter onProgress={onProgress} onReady={onReady} />
+      <World {...world} setBubble={setBubble} bubbleAnchor={bubbleAnchor} />
       <EffectComposer multisampling={4}>
         <N8AO aoRadius={0.6} intensity={2.2} distanceFalloff={0.6} halfRes />
         <Bloom intensity={0.35} luminanceThreshold={1} mipmapBlur />
       </EffectComposer>
     </Canvas>
+    <SpeechBubble bubble={bubble} anchor={bubbleAnchor} />
+    </>
   );
 }

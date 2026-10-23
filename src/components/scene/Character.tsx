@@ -16,7 +16,19 @@ import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
  * scene's transition, so the pose changes in step with the camera move.
  */
 
-export type CharacterMotion = { desk: number; turn: number };
+/** `waveAt` is the clock time a wave started (negative = none). */
+export type CharacterMotion = { desk: number; turn: number; waveAt: number };
+
+const WAVE_SECONDS = 2.2;
+
+/** 0..1 envelope for a wave: quick lift, hold, ease down. */
+function waveAmount(t: number, start: number) {
+  const k = t - start;
+  if (start < 0 || k < 0 || k > WAVE_SECONDS) return 0;
+  const up = THREE.MathUtils.smoothstep(k, 0, 0.3);
+  const down = 1 - THREE.MathUtils.smoothstep(k, WAVE_SECONDS - 0.45, WAVE_SECONDS);
+  return up * down;
+}
 
 const SKIN = "#f0b18c";
 const SKIN_SHADE = "#d98f6a";
@@ -483,9 +495,13 @@ export function Character({ motion }: { motion: React.RefObject<CharacterMotion>
     // Arms: relaxed at the sides, or forward on the keyboard with a light typing motion.
     const type = (phase: number) => Math.sin(t * 12 + phase) * 0.06 * k;
     if (shoulderL.current) shoulderL.current.rotation.set(lerp(0.05, -1.12, k), 0, lerp(-0.16, -0.04, k));
-    if (shoulderR.current) shoulderR.current.rotation.set(lerp(0.05, -1.12, k), 0, lerp(0.16, 0.04, k));
+    // Waving: the right arm swings up and out, the forearm rocks side to side.
+    const w = waveAmount(t, motion.current?.waveAt ?? -1);
+    if (shoulderR.current)
+      shoulderR.current.rotation.set(lerp(lerp(0.05, -1.12, k), -0.25, w), 0, lerp(lerp(0.16, 0.04, k), 2.55, w));
     if (elbowL.current) elbowL.current.rotation.set(lerp(-0.15, -0.45, k) + type(0), 0, 0);
-    if (elbowR.current) elbowR.current.rotation.set(lerp(-0.15, -0.45, k) + type(1.7), 0, 0);
+    if (elbowR.current)
+      elbowR.current.rotation.set(lerp(lerp(-0.15, -0.45, k) + type(1.7), -0.15, w), 0, w * (0.45 + Math.sin(t * 11) * 0.45));
 
     // Legs: standing, or seated with thighs forward and shins down.
     for (const [hip, knee] of [

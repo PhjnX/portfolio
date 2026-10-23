@@ -8,6 +8,7 @@ import { profile, sections, ui } from "@/content/site";
 import { Nav } from "../Nav";
 import { useSite, useT } from "../Providers";
 import { GitHub, LinkedIn, Mail, Phone } from "../icons";
+import { Loader } from "./Loader";
 import { About, Contact, Experience, Intro, Skills, WhatIDo, Work, type SectionProps } from "./Sections";
 
 // three.js only runs in the browser.
@@ -58,12 +59,14 @@ function usePagerMode() {
 
 export function Home() {
   const t = useT();
-  const { theme, themeOrigin } = useSite();
+  const { theme, themeOrigin, lang } = useSite();
   const pager = usePagerMode();
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState(1);
   const [project, setProject] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [sceneProgress, setSceneProgress] = useState(0);
+  const [sceneReady, setSceneReady] = useState(false);
 
   const indexRef = useRef(0);
   const lastTrigger = useRef(0);
@@ -87,13 +90,16 @@ export function Home() {
     [pager],
   );
 
-  // Short intro screen; it also hides the switch from the server layout to the pager.
+  // Opening screen: it waits for the 3D scene (its real progress, then its first frame) and
+  // also hides the switch from the server layout to the pager. ?skip-loader skips it for checks.
   useEffect(() => {
-    // ?skip-loader is handy for screenshots and quick checks.
-    const skip = new URLSearchParams(location.search).has("skip-loader");
-    const id = window.setTimeout(() => setLoading(false), skip ? 0 : 1500);
+    if (new URLSearchParams(location.search).has("skip-loader")) setLoading(false);
+    // If WebGL never starts (old device, blocked GPU), open the page anyway.
+    const id = window.setTimeout(() => setSceneReady(true), 8000);
     return () => window.clearTimeout(id);
   }, []);
+  const loaderTarget = sceneReady ? 100 : Math.min(95, 30 + sceneProgress * 0.65);
+  const finishLoading = useCallback(() => setLoading(false), []);
 
   // Open the section named in the URL, e.g. /#work from a case study's back link.
   useEffect(() => {
@@ -202,7 +208,13 @@ export function Home() {
   return (
     <>
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
-        <Scene section={id} screen={projects[project].screen} theme={theme} themeOrigin={themeOrigin} />
+        <Scene section={id} screen={projects[project].screen} theme={theme}
+          themeOrigin={themeOrigin}
+          lang={lang}
+          revealed={!loading}
+          onProgress={setSceneProgress}
+          onReady={() => setSceneReady(true)}
+        />
       </div>
       {/* Keeps text readable where the scene sits behind it on narrow screens. */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-bg/70 lg:hidden" />
@@ -257,48 +269,8 @@ export function Home() {
 
       <Socials />
 
-      <AnimatePresence>{loading && <Loader key="loader" />}</AnimatePresence>
+      <AnimatePresence>{loading && <Loader key="loader" target={loaderTarget} onDone={finishLoading} />}</AnimatePresence>
     </>
-  );
-}
-
-/** Light loading screen with a running line of text and a progress pill, like the reference. */
-function Loader() {
-  const t = useT();
-  const [pct, setPct] = useState(0);
-  useEffect(() => {
-    const start = performance.now();
-    let raf = 0;
-    const tick = () => {
-      const p = Math.min(1, (performance.now() - start) / 1100);
-      setPct(Math.round(100 * (1 - (1 - p) ** 3)));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  const line = `${t(ui.intro.role).toUpperCase()} · ${profile.nickname.toUpperCase()} · `;
-  return (
-    <motion.div
-      className="fixed inset-0 z-50 grid place-items-center overflow-hidden bg-[#ececf1] text-[#0b0a10]"
-      exit={{ clipPath: "inset(0 0 100% 0)", transition: { duration: 0.9, ease: [0.76, 0, 0.24, 1] } }}
-      style={{ clipPath: "inset(0 0 0% 0)" }}
-    >
-      <motion.div
-        aria-hidden
-        className="absolute top-1/2 flex -translate-y-1/2 whitespace-nowrap font-display text-[clamp(3rem,9vw,8rem)] leading-none font-bold tracking-tight text-[#0b0a10]/10"
-        animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration: 14, ease: "linear", repeat: Infinity }}
-      >
-        <span>{line.repeat(3)}</span>
-        <span>{line.repeat(3)}</span>
-      </motion.div>
-      <div className="relative flex items-center gap-3 rounded-full bg-[#0b0a10] px-5 py-2.5 text-xs font-bold tracking-widest text-white uppercase">
-        <span>Loading</span>
-        <span className="w-9 text-right tabular-nums">{pct}%</span>
-      </div>
-    </motion.div>
   );
 }
 

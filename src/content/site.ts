@@ -139,6 +139,18 @@ export const ui = {
     learned: { en: "What I learned", vi: "Bài học" },
     next: { en: "Next project", vi: "Dự án tiếp theo" },
   },
+  /** What the 3D character says in its speech bubble. */
+  character: {
+    hello: { en: "Hi, I'm Phjn!", vi: "Chào bạn, mình là Phjn!" },
+    lang: { en: "Hello!", vi: "Xin chào!" },
+    lines: [
+      { en: "Thanks for stopping by!", vi: "Cảm ơn bạn đã ghé!" },
+      { en: "Have a look at my projects.", vi: "Xem thử dự án của mình nhé." },
+      { en: "I'm looking for a front-end role.", vi: "Mình đang tìm việc Front-end đó!" },
+      { en: "Try the sun and moon button.", vi: "Thử bấm nút mặt trời xem." },
+      { en: "Built with React and three.js.", vi: "Mình làm bằng React và three.js." },
+    ],
+  },
   footer: {
     built: { en: "Built with Next.js, three.js and Motion.", vi: "Làm bằng Next.js, three.js và Motion." },
     source: { en: "Source code", vi: "Mã nguồn" },
