@@ -16,13 +16,14 @@ export const profile = {
   initials: "BHP",
   avatar: "/images/avatar.jpg",
   email: "buihoangphi2003@gmail.com",
-  phone: "(+84) 919 497 091",
-  phoneHref: "tel:+84919497091",
+  phone: "+84 989 891 465",
+  phoneHref: "tel:+84989891465",
   github: "https://github.com/PhjnX",
   githubHandle: "PhjnX",
   linkedin: "https://www.linkedin.com/in/b%C3%B9i-ho%C3%A0ng-phi-91a69b300",
   linkedinLabel: "in/bùi-hoàng-phi",
-  cvUrl: "/cv.pdf",
+  /** CV file per site language. */
+  cv: { en: "/cv-en.pdf", vi: "/cv-vi.pdf" } as Localized,
   location: { en: "Binh Tan, Ho Chi Minh City", vi: "Bình Tân, TP. Hồ Chí Minh" } as Localized,
   timeZone: "Asia/Ho_Chi_Minh",
   openToWork: true,
@@ -59,16 +60,16 @@ export const ui = {
   },
   about: {
     kicker: { en: "About me", vi: "Giới thiệu" },
-    title: { en: "Front-end developer, almost a year in", vi: "Front-end developer, gần một năm kinh nghiệm" },
+    title: { en: "Front-end developer, about a year in", vi: "Front-end developer, khoảng một năm kinh nghiệm" },
     realName: { en: "Real name: Bùi Hoàng Phi", vi: "Tên thật: Bùi Hoàng Phi" },
     text: {
-      en: "Front-end developer with nearly a year of experience building web and mobile apps with React, React Native and TypeScript. I work closely with back-end teams on REST and WebSocket APIs, and I customise WordPress and WooCommerce with PHP. Next I want to grow into a full-stack role, and I am currently learning .NET and software architecture.",
-      vi: "Front-end developer với gần 1 năm kinh nghiệm làm web và mobile app bằng React, React Native và TypeScript. Tôi làm việc sát với team back-end để tích hợp REST và WebSocket API, và tuỳ biến WordPress, WooCommerce bằng PHP. Mục tiêu tiếp theo là trở thành full-stack, hiện tôi đang học .NET và kiến trúc phần mềm.",
+      en: "Front-end developer with about a year of experience shipping React/Next.js web apps, a React Native app on Google Play, and WooCommerce stores for German clients. Comfortable with PHP for WordPress/Elementor customisation and REST/WebSocket integration. Looking for a front-end role.",
+      vi: "Lập trình viên Front-end với khoảng 1 năm kinh nghiệm phát triển web app React/Next.js, ứng dụng React Native trên Google Play và các shop WooCommerce cho khách hàng Đức. Sử dụng tốt PHP để tuỳ biến WordPress/Elementor và tích hợp REST/WebSocket. Đang tìm kiếm vị trí Front-end.",
     },
     facts: {
       education: { en: "Education", vi: "Học vấn" },
       languages: { en: "Languages", vi: "Ngôn ngữ" },
-      certs: { en: "Certifications", vi: "Chứng chỉ" },
+      course: { en: "Course", vi: "Khoá học" },
     },
   },
   stats: [
@@ -88,8 +89,8 @@ export const ui = {
     kicker: { en: "Experience", vi: "Kinh nghiệm" },
     title: { en: "Where I have worked", vi: "Nơi tôi đã làm" },
     lead: {
-      en: "Almost a year at Webie Vietnam, after an internship at TechX.",
-      vi: "Gần một năm ở Webie Vietnam, trước đó thực tập ở TechX.",
+      en: "About a year at Webie Vietnam: web, mobile and WordPress work.",
+      vi: "Khoảng một năm ở Webie Vietnam: làm web, mobile và WordPress.",
     },
   },
   work: {
@@ -111,10 +112,10 @@ export const ui = {
     kicker: { en: "Skills", vi: "Kỹ năng" },
     title: { en: "Tools I work with", vi: "Công cụ tôi dùng" },
     lead: {
-      en: "What I use every day, and a few things I am learning.",
-      vi: "Những thứ tôi dùng hằng ngày, và vài thứ đang học.",
+      en: "Grouped the same way as on my CV.",
+      vi: "Chia nhóm giống như trong CV.",
     },
-    learning: { en: "Learning now", vi: "Đang học" },
+    soft: { en: "Soft skills", vi: "Kỹ năng mềm" },
   },
   contact: {
     kicker: { en: "Contact", vi: "Liên hệ" },
@@ -147,43 +148,24 @@ export const ui = {
 export const experience = [
   {
     company: "Webie Vietnam",
-    role: { en: "Front-end Developer", vi: "Front-end Developer" },
+    role: { en: "Front-end Developer", vi: "Lập trình viên Front-end" },
     period: "12/2025 – 10/2026",
     points: [
       {
-        en: "Built the UI of the EMS web and mobile apps with React, React Native and TypeScript, with state in Redux Toolkit.",
-        vi: "Làm UI cho web app và mobile app EMS bằng React, React Native và TypeScript, quản lý state bằng Redux Toolkit.",
+        en: "Built the EMS web app and admin panel with React, Vite and Redux Toolkit, with lazy loading, code splitting and Puppeteer prerendering for SEO.",
+        vi: "Xây dựng web app EMS và trang quản trị bằng React, Vite, Redux Toolkit; áp dụng lazy loading, code splitting và prerender bằng Puppeteer để tối ưu SEO.",
       },
       {
-        en: "Agreed API contracts with the back-end team and integrated REST APIs and WebSocket.",
-        vi: "Thống nhất API contract với team back-end, tích hợp REST API và WebSocket.",
+        en: "EMS Mobile (React Native/Expo, EAS Build): built the whole UI alone — QR e-tickets, QR scanning, Google sign-in — and released it through Google Play closed testing with 20 testers.",
+        vi: "Ứng dụng EMS Mobile (React Native/Expo, EAS Build): tự làm toàn bộ UI — vé điện tử QR, quét QR, đăng nhập Google; phát hành closed testing trên Google Play với 20 tester.",
       },
       {
-        en: "Responsive layouts in Tailwind CSS; faster Vite builds with route lazy-loading and code splitting.",
-        vi: "Dựng layout responsive bằng Tailwind CSS; tối ưu build Vite với lazy-load route và code splitting.",
+        en: "Built B2C/B2B flows for German WooCommerce stores (IT42life, Reuschenbach) and WordPress/Elementor sites (webieglobal.com), with custom PHP in WPCode and ACF/SCF fields.",
+        vi: "Xây dựng luồng B2C/B2B cho các shop WooCommerce Đức (IT42life, Reuschenbach) và website WordPress/Elementor (webieglobal.com), viết PHP tuỳ chỉnh với WPCode và field ACF/SCF.",
       },
       {
-        en: "Prerendered public pages with Puppeteer for better SEO and first load.",
-        vi: "Prerender các trang public bằng Puppeteer để cải thiện SEO và tốc độ tải đầu.",
-      },
-      {
-        en: "Regular audits of company and client sites (performance, 404s, broken links) and coordinated the fixes.",
-        vi: "Kiểm tra định kỳ website công ty và khách hàng (hiệu năng, lỗi 404, link hỏng) và điều phối việc sửa.",
-      },
-      {
-        en: "Maintained WooCommerce stores for German clients (IT42life, Reuschenbach) and WordPress/Elementor sites, with custom PHP in WPCode.",
-        vi: "Bảo trì shop WooCommerce cho khách hàng Đức (IT42life, Reuschenbach) và các site WordPress/Elementor, viết PHP tuỳ biến bằng WPCode.",
-      },
-    ],
-  },
-  {
-    company: "TechX Technology",
-    role: { en: "Front-end Intern", vi: "Thực tập sinh Front-end" },
-    period: "09/2024 – 12/2024",
-    points: [
-      {
-        en: "Built profile pages with HTML and CSS; studied for Japanese IT certifications.",
-        vi: "Làm các trang profile bằng HTML và CSS; học các chứng chỉ IT Nhật Bản.",
+        en: "Integrated REST APIs and WebSocket with the back-end team, and ran regular Lighthouse and Core Web Vitals audits on the WordPress sites.",
+        vi: "Tích hợp REST API và WebSocket cùng team backend; định kỳ audit Lighthouse và Core Web Vitals cho các website WordPress.",
       },
     ],
   },
@@ -193,35 +175,37 @@ export const education = {
   school: { en: "Van Lang University", vi: "Đại học Văn Lang" },
   degree: {
     en: "Bachelor of IT, Software Engineering · GPA 3.16/4.0",
-    vi: "Cử nhân CNTT, Công nghệ Phần mềm · GPA 3.16/4.0",
+    vi: "Cử nhân CNTT, Công nghệ phần mềm · GPA 3.16/4.0",
   },
   period: "2021 – 2025",
 };
 
-export const languages: Localized[] = [
-  { en: "Vietnamese (native)", vi: "Tiếng Việt (bản ngữ)" },
-  { en: "English (intermediate)", vi: "Tiếng Anh (trung cấp)" },
-];
+export const course = {
+  school: "Cybersoft Academy",
+  name: { en: "Front-end Development", vi: "Khoá học Lập trình Front-end" },
+  period: "09/2024 – 05/2025",
+};
 
-export const certifications = [
-  { name: "TOEIC 615 / 990", date: "10/2025" },
-  { name: "Front-end Development · Cybersoft", date: "09/2024 – 05/2025" },
+export const languages: Localized[] = [
+  { en: "Vietnamese — native", vi: "Tiếng Việt — bản ngữ" },
+  { en: "English — intermediate (TOEIC 615)", vi: "Tiếng Anh — trung cấp (TOEIC 615)" },
 ];
 
 /** Skill groups, as on the CV. Names must match keys in content/tech.ts to get a logo. */
 export const skillGroups: { title: Localized; items: string[] }[] = [
-  { title: { en: "Languages", vi: "Ngôn ngữ" }, items: ["JavaScript", "TypeScript", "HTML5", "CSS", "SCSS"] },
-  { title: { en: "Front-end", vi: "Front-end" }, items: ["React", "Next.js", "Redux Toolkit", "Tailwind CSS"] },
-  { title: { en: "Mobile", vi: "Mobile" }, items: ["React Native", "Expo", "NativeWind", "EAS Build"] },
-  { title: { en: "CMS", vi: "CMS" }, items: ["WordPress", "WooCommerce", "Elementor", "ACF/SCF", "WPCode"] },
   {
-    title: { en: "Performance & SEO", vi: "Hiệu năng & SEO" },
-    items: ["Lighthouse", "PageSpeed", "Puppeteer", "Lazy loading"],
+    title: { en: "Front-end", vi: "Front-end" },
+    items: ["React", "Next.js", "TypeScript", "JavaScript", "Redux Toolkit", "Zustand", "Tailwind CSS"],
   },
-  { title: { en: "Tools", vi: "Công cụ" }, items: ["Git", "GitHub", "GitLab", "Docker", "Vercel", "Postman", "Figma"] },
+  { title: { en: "Mobile", vi: "Mobile" }, items: ["React Native", "Expo", "EAS Build"] },
+  { title: { en: "WordPress", vi: "WordPress" }, items: ["WooCommerce", "Elementor", "PHP", "ACF", "PHPUnit", "PHPStan"] },
+  { title: { en: "Tools", vi: "Công cụ" }, items: ["Git", "REST API", "WebSocket", "Puppeteer", "Supabase", "Figma"] },
 ];
 
-export const learning = ["Angular", "Jest", "React Testing Library", ".NET"];
+export const softSkills: Localized[] = [
+  { en: "Taking part in code review", vi: "Tham gia code review" },
+  { en: "Reading English documentation", vi: "Đọc tài liệu tiếng Anh" },
+];
 
 /** The "What I do" cards. */
 export const services: { title: Localized; text: Localized; stack: string[] }[] = [
@@ -239,14 +223,14 @@ export const services: { title: Localized; text: Localized; stack: string[] }[] 
       en: "React Native apps on Expo, from QR tickets and scanning to Google sign-in, built with EAS and shipped to Google Play.",
       vi: "App React Native trên Expo, từ vé QR, quét mã đến đăng nhập Google, build bằng EAS và phát hành lên Google Play.",
     },
-    stack: ["React Native", "Expo", "NativeWind", "EAS Build"],
+    stack: ["React Native", "Expo", "EAS Build"],
   },
   {
     title: { en: "WordPress & WooCommerce", vi: "WordPress & WooCommerce" },
     text: {
-      en: "Shops and company sites: B2B/B2C flows, custom fields, custom PHP and regular performance and SEO checks.",
-      vi: "Shop và website doanh nghiệp: luồng B2B/B2C, custom field, PHP tuỳ biến, kiểm tra hiệu năng và SEO định kỳ.",
+      en: "Shops and company sites: B2B/B2C flows, custom fields, custom PHP, and regular Lighthouse and Core Web Vitals checks.",
+      vi: "Shop và website doanh nghiệp: luồng B2B/B2C, custom field, PHP tuỳ biến, audit Lighthouse và Core Web Vitals định kỳ.",
     },
-    stack: ["WordPress", "WooCommerce", "Elementor", "PHP", "Lighthouse"],
+    stack: ["WordPress", "WooCommerce", "Elementor", "PHP", "ACF"],
   },
 ];

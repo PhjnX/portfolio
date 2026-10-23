@@ -55,7 +55,7 @@ export function CaseStudy({ slug }: { slug: string }) {
         >
           {[
             { k: t(ui.caseStudy.role), v: <span className="font-semibold">{t(project.role)}</span> },
-            { k: t(ui.caseStudy.year), v: <span className="font-semibold tabular-nums">{project.period}</span> },
+            { k: t(ui.caseStudy.year), v: <span className="font-semibold tabular-nums">{typeof project.period === "string" ? project.period : t(project.period)}</span> },
             {
               k: t(ui.caseStudy.stack),
               v: (

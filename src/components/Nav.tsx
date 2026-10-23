@@ -89,7 +89,7 @@ export function Nav({ active, onGo }: Props) {
             {theme === "dark" ? <Sun width={15} height={15} /> : <Moon width={15} height={15} />}
           </button>
           <a
-            href={profile.cvUrl}
+            href={t(profile.cv)}
             target="_blank"
             rel="noreferrer"
             className="hidden items-center gap-1.5 rounded-full bg-fg px-3.5 py-1.5 text-xs font-bold text-bg transition-opacity hover:opacity-85 sm:inline-flex"

@@ -6,7 +6,8 @@ export type Project = {
   slug: string;
   title: string;
   kind: "personal" | "client";
-  period: string;
+  /** Plain text, or per language when it contains words (e.g. "now" / "nay"). */
+  period: string | Localized;
   /** Which illustration ProjectVisual draws on the case study page. */
   visual: "vietqr" | "ems" | "woo" | "coffee";
   /** What the 3D scene shows while this project is selected. */
@@ -94,8 +95,8 @@ export const projects: Project[] = [
         vi: "Đăng nhập bằng Google, tải ảnh và tin tức sau sự kiện.",
       },
       {
-        en: "Built in the cloud with EAS Build and released to closed testing on Google Play.",
-        vi: "Build trên cloud bằng EAS Build và phát hành closed testing trên Google Play.",
+        en: "Built in the cloud with EAS Build and released through Google Play closed testing with 20 testers.",
+        vi: "Build trên cloud bằng EAS Build và phát hành closed testing trên Google Play với 20 tester.",
       },
     ],
     learned: {
@@ -145,17 +146,20 @@ export const projects: Project[] = [
     slug: "phjn-coffee",
     title: "Phjn Coffee",
     kind: "personal",
-    period: "10/2026",
+    period: { en: "10/2026 – now", vi: "10/2026 – nay" },
     visual: "coffee",
     screen: "coffee",
-    accent: "#d9a066",
+    accent: "#c9a25a",
     summary: {
       en: "Ordering site for a fictional Saigon café: guests scan the QR code on their table to order, and the counter runs orders, menu and tables from an admin dashboard.",
       vi: "Website gọi món cho một quán cà phê (giả lập) ở Sài Gòn: khách quét mã QR trên bàn để gọi món, quầy quản lý đơn, thực đơn và bàn qua trang admin.",
     },
     role: { en: "Side project: design and full-stack build", vi: "Dự án cá nhân: thiết kế và làm full-stack" },
     stack: ["Next.js", "TypeScript", "Tailwind CSS", "Supabase", "Zustand", "Vitest"],
-    links: [{ label: { en: "Live site", vi: "Xem trang thật" }, href: "https://phjn-coffee.vercel.app" }],
+    links: [
+      { label: { en: "Live site", vi: "Xem trang thật" }, href: "https://phjn-coffee.vercel.app" },
+      { label: { en: "Source", vi: "Mã nguồn" }, href: "https://github.com/PhjnX/phjn-coffee" },
+    ],
     problem: {
       en: "A café menu where every category needs different choices: coffee has milk and extra shots, milk tea has toppings, juice has sweetness, pastries can be warmed. Orders have to reach the counter fast, and the price must be impossible to change from the browser.",
       vi: "Thực đơn quán cà phê mà mỗi loại món cần lựa chọn khác nhau: cà phê có loại sữa và thêm shot, trà sữa có topping, nước ép chọn độ ngọt, bánh có thể hâm nóng. Đơn phải đến quầy nhanh, và giá không thể bị sửa từ trình duyệt.",
@@ -187,34 +191,48 @@ export const projects: Project[] = [
     slug: "vietqr-checkout",
     title: "VietQR Checkout",
     kind: "personal",
-    period: "2026",
+    period: { en: "10/2026 – now", vi: "10/2026 – nay" },
     visual: "vietqr",
     screen: "checkout",
     accent: "#2fd28b",
     summary: {
-      en: "A small WooCommerce payment plugin: the customer scans a VietQR code and the order is marked paid when the transfer arrives.",
-      vi: "Plugin thanh toán nhỏ cho WooCommerce: khách quét mã VietQR, đơn hàng tự chuyển sang đã thanh toán khi tiền về.",
+      en: "A WooCommerce payment gateway: it shows a VietQR code with the amount and order code pre-filled, and marks the order as paid when the SePay webhook reports the transfer.",
+      vi: "Cổng thanh toán cho WooCommerce: hiển thị mã VietQR điền sẵn số tiền và mã đơn, tự chuyển đơn sang đã thanh toán khi webhook SePay báo tiền về.",
     },
     role: { en: "Side project", vi: "Dự án cá nhân" },
-    stack: ["PHP", "WooCommerce", "GitHub Actions"],
-    links: [{ label: { en: "Source", vi: "Mã nguồn" }, href: "https://github.com/PhjnX/vietqr-checkout" }],
+    stack: ["PHP", "WooCommerce", "SePay webhook", "PHPUnit", "PHPStan"],
+    links: [
+      {
+        label: { en: "Live demo", vi: "Demo trực tiếp" },
+        href: "https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/PhjnX/vietqr-checkout/main/blueprint.json",
+      },
+      { label: { en: "Source", vi: "Mã nguồn" }, href: "https://github.com/PhjnX/vietqr-checkout" },
+    ],
     problem: {
-      en: "Small shops in Vietnam get paid by bank transfer and match each transfer to an order by hand.",
-      vi: "Shop nhỏ ở Việt Nam nhận tiền qua chuyển khoản và phải dò từng giao dịch với đơn hàng bằng tay.",
+      en: "Small shops in Vietnam get paid by bank transfer and match each transfer to an order by hand. Customers mistype the amount or the note, and orders wait.",
+      vi: "Shop nhỏ ở Việt Nam nhận tiền qua chuyển khoản và phải dò từng giao dịch với đơn hàng bằng tay. Khách gõ sai số tiền hoặc nội dung, đơn phải chờ.",
     },
     built: [
       {
-        en: "A VietQR code with bank, amount and transfer note pre-filled.",
-        vi: "Mã VietQR điền sẵn ngân hàng, số tiền và nội dung chuyển khoản.",
+        en: "A VietQR code with the amount and order code pre-filled, so the transfer matches the order without typing.",
+        vi: "Mã VietQR điền sẵn số tiền và mã đơn, khách chuyển khoản là khớp đơn mà không phải gõ tay.",
       },
       {
-        en: "A webhook endpoint that marks the order paid and ignores duplicate calls.",
-        vi: "Endpoint webhook đánh dấu đơn đã thanh toán và bỏ qua request trùng.",
+        en: "A SePay webhook handler that marks the order as paid, ignores duplicate calls and handles partial and overpayments; unpaid orders are cancelled automatically.",
+        vi: "Xử lý webhook SePay: chuyển đơn sang đã thanh toán, bỏ qua webhook trùng, xử lý thanh toán thiếu/thừa; đơn chưa thanh toán tự huỷ.",
+      },
+      {
+        en: "Works with the WooCommerce Checkout block and HPOS order storage.",
+        vi: "Hỗ trợ Checkout block và HPOS của WooCommerce.",
+      },
+      {
+        en: "Tested with PHPUnit and PHPStan, with a live demo shop running in WordPress Playground.",
+        vi: "Kiểm thử bằng PHPUnit và PHPStan; có bản demo chạy trên WordPress Playground.",
       },
     ],
     learned: {
-      en: "Anything coming from outside can arrive twice or late, so the handler has to be safe to run again.",
-      vi: "Mọi request từ bên ngoài đều có thể đến hai lần hoặc đến trễ, nên phần xử lý phải chạy lại được mà không sai.",
+      en: "Anything coming from outside can arrive twice or late, so the webhook handler has to be safe to run again.",
+      vi: "Mọi request từ bên ngoài đều có thể đến hai lần hoặc đến trễ, nên phần xử lý webhook phải chạy lại được mà không sai.",
     },
   },
 ];

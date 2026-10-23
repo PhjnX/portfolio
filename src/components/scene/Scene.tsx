@@ -240,12 +240,12 @@ const TILE_NAMES = [
   "Expo",
   "WordPress",
   "WooCommerce",
-  "HTML5",
-  "SCSS",
+  "Elementor",
+  "Supabase",
   "Figma",
   "Git",
-  "Docker",
-  "Vercel",
+  "Puppeteer",
+  "Vite",
   "PHP",
 ];
 

@@ -5,14 +5,14 @@ import { AnimatePresence, motion, type Variants } from "motion/react";
 import { useEffect, useState } from "react";
 import { projects } from "@/content/projects";
 import {
-  certifications,
+  course,
   education,
   experience,
   languages,
-  learning,
   profile,
   services,
   skillGroups,
+  softSkills,
   ui,
 } from "@/content/site";
 import { ArrowDown, ArrowUpRight, Check, Copy, Download, GitHub, LinkedIn, MapPin, Phone } from "../icons";
@@ -132,7 +132,7 @@ export function Intro({ go }: SectionProps) {
             <ArrowDown width={15} height={15} className="transition-transform group-hover:translate-y-0.5" />
           </button>
           <a
-            href={profile.cvUrl}
+            href={t(profile.cv)}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 rounded-full border border-line-strong bg-bg/40 px-5 py-2.5 text-sm font-bold backdrop-blur transition-colors hover:bg-fg/5"
@@ -197,13 +197,10 @@ export function About() {
           ))}
         </div>
         <div>
-          <p className="text-xs font-bold tracking-[0.14em] text-muted uppercase">{t(ui.about.facts.certs)}</p>
-          {certifications.map((c) => (
-            <div key={c.name} className="mt-2.5">
-              <p className="font-bold">{c.name}</p>
-              <p className="mt-0.5 text-muted">{c.date}</p>
-            </div>
-          ))}
+          <p className="text-xs font-bold tracking-[0.14em] text-muted uppercase">{t(ui.about.facts.course)}</p>
+          <p className="mt-2.5 font-bold">{course.school}</p>
+          <p className="mt-1 leading-snug text-muted">{t(course.name)}</p>
+          <p className="mt-1 text-muted">{course.period}</p>
         </div>
       </Item>
     </div>
@@ -348,7 +345,7 @@ export function Work({ project, setProject }: SectionProps) {
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.3, ease }}
           >
-            <p className="text-xs font-bold tracking-wider text-muted uppercase tabular-nums">{active.period}</p>
+            <p className="text-xs font-bold tracking-wider text-muted uppercase tabular-nums">{typeof active.period === "string" ? active.period : t(active.period)}</p>
             <p className="mt-2 leading-relaxed text-muted">{t(active.summary)}</p>
             <ul className="mt-4 flex flex-wrap gap-1.5">
               {active.stack.map((s) => (
@@ -418,11 +415,11 @@ export function Skills() {
           </Item>
         ))}
         <Item className="sm:col-span-2">
-          <p className="text-xs font-bold tracking-wider text-accent uppercase">{t(ui.skills.learning)}</p>
+          <p className="text-xs font-bold tracking-wider text-muted uppercase">{t(ui.skills.soft)}</p>
           <ul className="mt-2.5 flex flex-wrap gap-1.5">
-            {learning.map((s) => (
-              <li key={s} className="opacity-75">
-                <TechBadge name={s} size="sm" />
+            {softSkills.map((s) => (
+              <li key={s.en} className="rounded-full border border-line px-2.5 py-1 text-xs font-semibold">
+                {t(s)}
               </li>
             ))}
           </ul>
