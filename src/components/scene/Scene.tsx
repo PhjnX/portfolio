@@ -63,15 +63,18 @@ function layoutFor(section: SectionId, screen: Screen): Layout {
 }
 
 /** On narrow screens the text runs full width, so centre the character and push it back. */
-function fit(l: Layout, wide: boolean): Layout {
+/**
+ * Phones: the content scrolls on cards, leaving the top ~40% of the screen as a stage.
+ * The character sits there in every section (on the intro it peeks up from the bottom).
+ */
+function fit(l: Layout, wide: boolean, section: SectionId): Layout {
   if (wide) return l;
-  const bust = l.mode === "bust";
-  return {
-    ...l,
-    pos: [0, bust ? -5.8 : 0.4, -3],
-    turn: bust ? 0 : 1.0,
-    scale: l.scale * 0.7,
-  };
+  if (section === "intro") return { ...l, pos: [0, -5.1, -3], turn: 0, scale: l.scale * 0.7 };
+  // Over the shoulder on Experience and Projects so the monitor (with the screenshots) faces us.
+  if (l.mode === "desk")
+    return { ...l, pos: [0, 1.95, -3], turn: section === "whatido" ? 1.0 : 2.55, scale: l.scale * 0.5 };
+  const turn = section === "about" ? 0.35 : section === "contact" ? -0.35 : 0;
+  return { ...l, pos: [0, 0.5, -3], turn, scale: l.scale * 0.55 };
 }
 
 /** Screenshots of the live sites per monitor screen (public/projects). */
@@ -560,13 +563,15 @@ function World({ section, screen, theme, themeOrigin, lang, revealed, setBubble,
   // Sun and moon sit on the side of the screen that has no text in this section.
   const skyX = section === "about" || section === "whatido" ? 0.2 : section === "experience" || section === "work" ? 0.58 : 0.8;
   const wide = size.width >= 1024;
-  const layout = fit(layoutFor(section, screen), wide);
+  const layout = fit(layoutFor(section, screen), wide, section);
 
   const rig = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
   const rim = useRef<THREE.PointLight>(null);
   const head = useMemo(() => new THREE.Vector3(), []);
   const sway = useRef(0);
+  const lastScroll = useRef(0);
+  const scrollTwist = useRef(0);
 
   // The transition: every change of layout eases from wherever things are now to the new pose.
   const current = useRef<Pose>(poseOf(layout));
@@ -648,7 +653,13 @@ function World({ section, screen, theme, themeOrigin, lang, revealed, setBubble,
       rig.current.position.set(c.pos.x, c.pos.y + arc * 0.25, c.pos.z);
       rig.current.scale.setScalar(c.scale);
     }
-    sway.current = THREE.MathUtils.damp(sway.current, state.pointer.x * 0.08, 3, dt);
+    // Phones: the character turns with the scroll speed and settles back when scrolling stops.
+    const y = window.scrollY;
+    const speed = dt > 0 ? (y - lastScroll.current) / dt : 0;
+    lastScroll.current = y;
+    const twist = wide ? 0 : THREE.MathUtils.clamp(speed * 0.0005, -0.6, 0.6);
+    scrollTwist.current = THREE.MathUtils.damp(scrollTwist.current, twist, 4, dt);
+    sway.current = THREE.MathUtils.damp(sway.current, state.pointer.x * 0.08 + scrollTwist.current, 3, dt);
     if (body.current) body.current.rotation.y = c.turn + sway.current;
 
     // Opening shot: start further back and glide in once the loading screen opens.

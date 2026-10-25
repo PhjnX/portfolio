@@ -9,6 +9,7 @@ import { Nav } from "../Nav";
 import { useSite, useT } from "../Providers";
 import { GitHub, LinkedIn, Mail, Phone } from "../icons";
 import { Loader } from "./Loader";
+import { ScrollProgress } from "../ScrollProgress";
 import { SceneGuard } from "../scene/SceneGuard";
 import { About, Contact, Experience, Intro, Skills, WhatIDo, Work, type SectionProps } from "./Sections";
 
@@ -215,17 +216,12 @@ export function Home() {
           themeOrigin={themeOrigin}
           lang={lang}
           revealed={!loading}
-          paused={!pager && index > 0}
           onProgress={setSceneProgress}
           onReady={markSceneReady}
           />
         </SceneGuard>
       </div>
       {/* Phones: the character is shown on the intro only; past it the scene pauses and is covered so text stays readable. */}
-      <div
-        aria-hidden
-        className={`pointer-events-none fixed inset-0 z-0 bg-bg transition-opacity duration-700 lg:hidden ${index === 0 ? "opacity-0" : "opacity-95"}`}
-      />
 
       <Nav active={index} onGo={go} />
 
@@ -257,20 +253,11 @@ export function Home() {
         </main>
       ) : (
         <main className="relative z-10">
+          <ScrollProgress />
           {SLIDES.map((Slide, i) => (
-            <motion.section
-              key={sections[i].id}
-              id={sections[i].id}
-              aria-label={t(sections[i].label)}
-              initial="enter"
-              whileInView="center"
-              viewport={{ once: true, amount: 0.2 }}
-              variants={slideVariants}
-              custom={1}
-              className="flex min-h-dvh scroll-mt-0 items-center px-5 pt-24 pb-16 md:px-10"
-            >
+            <MobileSection key={sections[i].id} index={i} label={t(sections[i].label)}>
               <Slide {...props} />
-            </motion.section>
+            </MobileSection>
           ))}
         </main>
       )}
@@ -379,3 +366,43 @@ function Pager({ index, go }: { index: number; go: (i: number) => void }) {
     </>
   );
 }
+
+/**
+ * One section of the phone layout. The top of the screen is left open as a stage for the
+ * 3D character (it changes pose per section); the content sits on a frosted card that rises
+ * into place as it scrolls in, and its items stagger in after it.
+ */
+function MobileSection({ index, label, children }: { index: number; label: string; children: React.ReactNode }) {
+  const intro = index === 0;
+  return (
+    <section
+      id={sections[index].id}
+      aria-label={label}
+      className={`relative px-4 md:px-10 ${intro ? "flex min-h-dvh items-start pt-24 pb-[42vh]" : "pt-[40vh] pb-6"}`}
+    >
+      <motion.div
+        initial="enter"
+        whileInView="center"
+        viewport={{ once: false, amount: 0.15 }}
+        variants={cardVariants}
+        className={
+          intro
+            ? "w-full"
+            : "w-full rounded-3xl border border-line bg-bg/72 p-5 shadow-[0_-12px_40px_-20px_rgb(0_0_0/0.5)] backdrop-blur-xl md:p-8"
+        }
+      >
+        {children}
+      </motion.div>
+    </section>
+  );
+}
+
+const cardVariants: Variants = {
+  enter: { opacity: 0, y: 90, scale: 0.94 },
+  center: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 90, damping: 18, staggerChildren: 0.07, delayChildren: 0.15 },
+  },
+};
